@@ -4,11 +4,11 @@ info:
   description: API für den Zugriff auf LoRa-Geräte und deren Sensordaten
   version: 1.0.0
   contact:
-    name: Dein Name
-    email: deine@email.de
+    name: Makerspace Partheland e.V.
+    email: info@makerspace-partheland.de
 
 servers:
-  - url: https://deine-domain.de/api
+  - url: https://data.makerspace-partheland.de/
     description: Produktions-Server
 
 components:
