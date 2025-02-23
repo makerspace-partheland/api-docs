@@ -104,48 +104,16 @@ paths:
   /LoRaDevices/sensebox/health:
     get:
       summary: "Erhalte den Status der senseBox-Geräte"
-      responses:
-        '200':
-          description: "Status der senseBox-Geräte"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            measurement:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-
-  /LoRaDevices/sensebox/health:
-    get:
-      summary: "Erhalte den Status eines bestimmten senseBox-Geräts"
       parameters:
         - name: device
           in: query
-          required: true
+          required: false
           schema:
             type: string
           example: Beucha_Nr1
       responses:
         '200':
-          description: "Status eines bestimmten senseBox-Geräts"
+          description: "Aktueller Status der senseBox-Geräte"
           content:
             application/json:
               schema:
@@ -213,49 +181,17 @@ paths:
 
   /LoRaDevices/waterlevel/health:
     get:
-      summary: "Erhalte den Gesundheitsstatus der Wasserstand-Geräte"
-      responses:
-        '200':
-          description: "Gesundheitsstatus der Wasserstand-Geräte"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            measurement:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-
-  /LoRaDevices/waterlevel/health:
-    get:
-      summary: "Erhalte den Status eines bestimmten Wasserstand-Geräts"
+      summary: "Erhalte den Status der Wasserstand-Geräte"
       parameters:
         - name: Device
           in: query
-          required: true
+          required: false
           schema:
             type: string
           example: LDDS75_Naunhof_1
       responses:
         '200':
-          description: "Status eines bestimmten Wasserstand-Geräts"
+          description: "Aktueller Status der Wasserstand-Geräte"
           content:
             application/json:
               schema:
