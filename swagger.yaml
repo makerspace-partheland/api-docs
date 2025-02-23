@@ -140,6 +140,52 @@ paths:
                             lastSeen:
                               type: string
 
+  /LoRaDevices/sensebox/details:
+    get:
+      summary: "Erhalte Details einer bestimmten senseBox:home"
+      parameters:
+        - name: device
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Beucha_Nr1
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: "Details einer bestimmten senseBox:home"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            displayName:
+                              type: string
+                            measurement:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+                            fields:
+                              type: object
+                              additionalProperties: true
+                              
   /LoRaDevices/waterlevel:
     get:
       summary: "Erhalte alle Wasserstand-Geräte"
@@ -224,57 +270,15 @@ paths:
       parameters:
         - name: Device
           in: query
-          required: true
+          required: false
           schema:
             type: string
           example: LDDS75_Naunhof_1
+      security:
+        - ApiKeyAuth: []
       responses:
         '200':
           description: "Details eines bestimmten Wasserstand-Sensors"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            displayName:
-                              type: string
-                            measurement:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            fields:
-                              type: object
-                              additionalProperties: true
-
-  /LoRaDevices/sensebox/details:
-    get:
-      summary: "Erhalte Details einer bestimmten senseBox:home"
-      parameters:
-        - name: device
-          in: query
-          required: true
-          schema:
-            type: string
-          example: Beucha_Nr1
-      responses:
-        '200':
-          description: "Details einer bestimmten senseBox:home"
           content:
             application/json:
               schema:
