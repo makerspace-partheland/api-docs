@@ -1,12 +1,10 @@
 openapi: 3.0.0
 info:
-  title: LoRaDevices API
-  description: API für den Zugriff auf LoRa-Geräte und deren Sensordaten
-  version: 1.0.0
+  title: LoRa Geräte API
+  version: 1.0.1
   contact:
     name: Makerspace Partheland e.V.
     email: info@makerspace-partheland.de
-
 servers:
   - url: https://data.makerspace-partheland.de/
     description: Produktions-Server
@@ -18,256 +16,352 @@ components:
       in: header
       name: x-api-key
       description: API-Key für detaillierte Informationen
-
 paths:
   /LoRaDevices:
     get:
-      summary: Liste aller LoRa-Geräte
-      description: Gibt eine Übersicht aller verfügbaren LoRa-Geräte zurück
+      summary: "Erhalte alle LoRa-Geräte"
       responses:
         '200':
-          description: Erfolgreiche Abfrage
+          description: "Eine Liste aller LoRa-Geräte"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  devices:
+                  type:
+                    type: string
+                  features:
                     type: array
                     items:
                       type: object
                       properties:
-                        id:
-                          type: string
-                          example: "sensebox1"
                         type:
                           type: string
-                          example: "senseBox"
-                        name:
-                          type: string
-                          example: "SenseBox 1"
-
-  /LoRaDevices/senseBox:
-    get:
-      summary: Liste aller senseBox-Geräte
-      description: Gibt eine Übersicht aller senseBox-Geräte zurück
-      responses:
-        '200':
-          description: Erfolgreiche Abfrage
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  devices:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        type:
-                          type: string
-                          enum: ["senseBox"]
-                        name:
-                          type: string
-
-  /LoRaDevices/senseBox/details:
-    get:
-      summary: Detaillierte Informationen zu senseBox-Geräten
-      description: Gibt detaillierte Informationen inkl. Sensorwerte zurück
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Erfolgreiche Abfrage
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  devices:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        type:
-                          type: string
-                        name:
-                          type: string
-                        location:
+                        properties:
                           type: object
                           properties:
-                            lat:
-                              type: number
-                            lon:
-                              type: number
-                        sensors:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              type:
-                                type: string
-                              value:
-                                type: number
-                              unit:
-                                type: string
-                        lastSeen:
-                          type: string
-                          format: date-time
-        '401':
-          description: Nicht autorisiert - API-Key fehlt oder ungültig
+                            deviceType:
+                              type: string
+                            active:
+                              type: boolean
+                            name:
+                              type: string
+                            displayName:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+                            measurement:
+                              type: string
+                            fields:
+                              type: object
+                              additionalProperties: true
 
-  /LoRaDevices/senseBox/health:
+  /LoRaDevices/sensebox:
     get:
-      summary: Status der senseBox-Geräte
-      description: Gibt den Online/Offline-Status der Geräte zurück
+      summary: "Erhalte alle senseBox-Geräte"
       responses:
         '200':
-          description: Erfolgreiche Abfrage
+          description: "Eine Liste aller senseBox-Geräte"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
+                  type:
+                    type: string
+                  features:
                     type: array
                     items:
                       type: object
                       properties:
-                        id:
+                        type:
                           type: string
-                        status:
+                        properties:
+                          type: object
+                          properties:
+                            active:
+                              type: boolean
+                            name:
+                              type: string
+                            displayName:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+                            measurement:
+                              type: string
+                            fields:
+                              type: object
+                              additionalProperties: true
+
+  /LoRaDevices/sensebox/health:
+    get:
+      summary: "Erhalte den Status der senseBox-Geräte"
+      responses:
+        '200':
+          description: "Status der senseBox-Geräte"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
                           type: string
-                          enum: ["online", "offline"]
-                        lastSeen:
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            measurement:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+
+  /LoRaDevices/sensebox/health:
+    get:
+      summary: "Erhalte den Status eines bestimmten senseBox-Geräts"
+      parameters:
+        - name: device
+          in: query
+          required: true
+          schema:
+            type: string
+          example: Beucha_Nr1
+      responses:
+        '200':
+          description: "Status eines bestimmten senseBox-Geräts"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
                           type: string
-                          format: date-time
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            measurement:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
 
   /LoRaDevices/waterlevel:
     get:
-      summary: Liste aller Wasserpegel-Geräte
-      description: Gibt eine Übersicht aller Wasserpegel-Geräte zurück
+      summary: "Erhalte alle Wasserstand-Geräte"
       responses:
         '200':
-          description: Erfolgreiche Abfrage
+          description: "Eine Liste aller Wasserstand-Geräte"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  devices:
+                  type:
+                    type: string
+                  features:
                     type: array
                     items:
                       type: object
                       properties:
-                        id:
-                          type: string
-                          example: "level1"
                         type:
                           type: string
-                          enum: ["waterlevel"]
-                          example: "waterlevel"
-                        name:
-                          type: string
-                          example: "Pegel Standort 1"
-
-  /LoRaDevices/waterlevel/details:
-    get:
-      summary: Detaillierte Informationen zu Wasserpegel-Geräten
-      description: Gibt detaillierte Informationen inkl. aktuelle Pegelstände zurück
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Erfolgreiche Abfrage
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  devices:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          example: "level1"
-                        type:
-                          type: string
-                          enum: ["waterlevel"]
-                        name:
-                          type: string
-                          example: "Pegel Standort 1"
-                        location:
+                        properties:
                           type: object
                           properties:
-                            lat:
-                              type: number
-                              example: 51.124
-                            lon:
-                              type: number
-                              example: 12.124
-                        currentLevel:
-                          type: number
-                          example: 123.45
-                        unit:
-                          type: string
-                          example: "cm"
-                        trend:
-                          type: string
-                          enum: ["rising", "falling", "stable"]
-                          example: "rising"
-                        lastSeen:
-                          type: string
-                          format: date-time
-                          example: "2024-01-20T12:00:00Z"
-                        battery:
-                          type: number
-                          example: 3.6
-                          description: "Batteriespannung in Volt"
-        '401':
-          description: Nicht autorisiert - API-Key fehlt oder ungültig
+                            active:
+                              type: boolean
+                            name:
+                              type: string
+                            displayName:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+                            measurement:
+                              type: string
+                            fields:
+                              type: object
+                              additionalProperties: true
 
   /LoRaDevices/waterlevel/health:
     get:
-      summary: Status der Wasserpegel-Geräte
-      description: Gibt den Online/Offline-Status der Wasserpegel-Geräte zurück
+      summary: "Erhalte den Gesundheitsstatus der Wasserstand-Geräte"
       responses:
         '200':
-          description: Erfolgreiche Abfrage
+          description: "Gesundheitsstatus der Wasserstand-Geräte"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
+                  type:
+                    type: string
+                  features:
                     type: array
                     items:
                       type: object
                       properties:
-                        id:
+                        type:
                           type: string
-                          example: "level1"
-                        status:
-                          type: string
-                          enum: ["online", "offline"]
-                          example: "online"
-                        lastSeen:
-                          type: string
-                          format: date-time
-                          example: "2024-01-20T12:00:00Z"
-                        battery:
+                        properties:
                           type: object
                           properties:
-                            value:
-                              type: number
-                              example: 3.6
+                            name:
+                              type: string
+                            measurement:
+                              type: string
                             status:
                               type: string
-                              enum: ["good", "low", "critical"]
-                              example: "good"
+                            lastSeen:
+                              type: string
+
+  /LoRaDevices/waterlevel/health:
+    get:
+      summary: "Erhalte den Status eines bestimmten Wasserstand-Geräts"
+      parameters:
+        - name: Device
+          in: query
+          required: true
+          schema:
+            type: string
+          example: LDDS75_Naunhof_1
+      responses:
+        '200':
+          description: "Status eines bestimmten Wasserstand-Geräts"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            measurement:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+
+  /LoRaDevices/waterlevel/details:
+    get:
+      summary: "Erhalte Details eines bestimmten Wasserstand-Geräts"
+      parameters:
+        - name: Device
+          in: query
+          required: true
+          schema:
+            type: string
+          example: LDDS75_Naunhof_1
+      responses:
+        '200':
+          description: "Details eines bestimmten Wasserstand-Sensors"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            displayName:
+                              type: string
+                            measurement:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+                            fields:
+                              type: object
+                              additionalProperties: true
+
+  /LoRaDevices/sensebox/details:
+    get:
+      summary: "Erhalte Details einer bestimmten senseBox:home"
+      parameters:
+        - name: device
+          in: query
+          required: true
+          schema:
+            type: string
+          example: Beucha_Nr1
+      responses:
+        '200':
+          description: "Details einer bestimmten senseBox:home"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        properties:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            displayName:
+                              type: string
+                            measurement:
+                              type: string
+                            status:
+                              type: string
+                            lastSeen:
+                              type: string
+                            fields:
+                              type: object
+                              additionalProperties: true
