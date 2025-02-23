@@ -1,14 +1,17 @@
 openapi: 3.0.0
 info:
   title: LoRa Geräte API
+  description: API für den Zugriff auf LoRa-Geräte und deren Sensordaten
   version: 1.0.1
   contact:
     name: Makerspace Partheland e.V.
     email: info@makerspace-partheland.de
+    url: https://makerspace-partheland.de
+
 servers:
   - url: https://data.makerspace-partheland.de/
     description: Produktions-Server
-
+    
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -16,6 +19,7 @@ components:
       in: header
       name: x-api-key
       description: API-Key für detaillierte Informationen
+      
 paths:
   /LoRaDevices:
     get:
