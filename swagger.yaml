@@ -74,27 +74,27 @@ paths:
                                   type: number
                                 pressure:
                                   type: number
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  deviceType: "sensor"
-                  binaryStatus: 1
-                  active: true
-                  name: "Device1"
-                  displayName: "Gerät 1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
-                  measurement: "internal_device_1"
-                  openSenseMap: "https://opensensemap.org/explore/12345"
-                  url: "https://sensoren.makerspace-partheland.de/device1"
-                  fields:
-                    temperature: 22.5
-                    humidity: 55.0
-                    pressure: 1013.25
+              examples:
+                loRaDeviceExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          deviceType: "sensor"
+                          binaryStatus: 1
+                          active: true
+                          name: "Device1"
+                          displayName: "Gerät 1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
+                          measurement: "internal_device_1"
+                          openSenseMap: "https://opensensemap.org/explore/12345"
+                          url: "https://sensoren.makerspace-partheland.de/device1"
+                          fields:
+                            temperature: 22.5
+                            humidity: 55.0
+                            pressure: 1013.25
 
   /v1/LoRaDevices/senseboxes:
     get:
@@ -151,27 +151,27 @@ paths:
                                   type: number
                                 pressure:
                                   type: number
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  deviceType: "senseBox"
-                  binaryStatus: 1
-                  active: true
-                  name: "senseBox1"
-                  displayName: "senseBox 1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
-                  measurement: "internal_senseBox_1"
-                  openSenseMap: "https://opensensemap.org/explore/67890"
-                  url: "https://sensoren.makerspace-partheland.de/sensebox1"
-                  fields:
-                    temperature: 20.0
-                    humidity: 60.0
-                    pressure: 1012.00
+              examples:
+                senseBoxExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          deviceType: "senseBox"
+                          binaryStatus: 1
+                          active: true
+                          name: "senseBox1"
+                          displayName: "senseBox 1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
+                          measurement: "internal_senseBox_1"
+                          openSenseMap: "https://opensensemap.org/explore/67890"
+                          url: "https://sensoren.makerspace-partheland.de/sensebox1"
+                          fields:
+                            temperature: 20.0
+                            humidity: 60.0
+                            pressure: 1012.00
 
   /v1/LoRaDevices/senseboxes/health:
     get:
@@ -211,17 +211,17 @@ paths:
                               type: string
                             lastSeen:
                               type: string
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  name: "senseBox1"
-                  measurement: "internal_sensebox_1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
+              examples:
+                senseBoxHealthExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          name: "senseBox1"
+                          measurement: "internal_sensebox_1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
 
   /v1/LoRaDevices/senseboxes/details:
     get:
@@ -277,23 +277,23 @@ paths:
                                   type: number
                                 pressure:
                                   type: number
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  name: "senseBox1"
-                  displayName: "senseBox 1"
-                  measurement: "internal_sensebox_1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
-                  binaryStatus: 1
-                  fields:
-                    temperature: 21.5
-                    humidity: 58.0
-                    pressure: 1011.50
+              examples:
+                senseBoxDetailsExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          name: "senseBox1"
+                          displayName: "senseBox 1"
+                          measurement: "internal_sensebox_1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
+                          binaryStatus: 1
+                          fields:
+                            temperature: 21.5
+                            humidity: 58.0
+                            pressure: 1011.50
 
   /v1/LoRaDevices/waterlevels:
     get:
@@ -344,25 +344,25 @@ paths:
                               properties:
                                 waterLevel:
                                   type: number
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  deviceType: "waterLevelSensor"
-                  binaryStatus: 1
-                  active: true
-                  name: "WaterLevel1"
-                  displayName: "Wasserstand 1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
-                  measurement: "internal_waterLevel_1"
-                  openSenseMap: "https://opensensemap.org/explore/54321"
-                  url: "https://sensoren.makerspace-partheland.de/waterlevel1"
-                  fields:
-                    waterLevel: 30.5
+              examples:
+                waterLevelExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          deviceType: "waterLevelSensor"
+                          binaryStatus: 1
+                          active: true
+                          name: "WaterLevel1"
+                          displayName: "Wasserstand 1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
+                          measurement: "internal_waterLevel_1"
+                          openSenseMap: "https://opensensemap.org/explore/54321"
+                          url: "https://sensoren.makerspace-partheland.de/waterlevel1"
+                          fields:
+                            waterLevel: 30.5
 
   /v1/LoRaDevices/waterlevels/health:
     get:
@@ -402,17 +402,17 @@ paths:
                               type: string
                             lastSeen:
                               type: string
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  name: "WaterLevel1"
-                  measurement: "internal_waterLevel_1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
+              examples:
+                waterLevelHealthExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          name: "WaterLevel1"
+                          measurement: "internal_waterLevel_1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
 
   /v1/LoRaDevices/waterlevels/details:
     get:
@@ -468,20 +468,20 @@ paths:
                               properties:
                                 waterLevel:
                                   type: number
-      examples:
-        application/json:
-          value:
-            type: "FeatureCollection"
-            features:
-              - type: "Feature"
-                properties:
-                  name: "WaterLevel1"
-                  displayName: "Wasserstand 1"
-                  measurement: "internal_waterLevel_1"
-                  status: "online"
-                  lastSeen: "2023-10-01T12:00:00Z"
-                  binaryStatus: 1
-                  openSenseMap: "https://opensensemap.org/explore/54321"
-                  url: "https://sensoren.makerspace-partheland.de/waterlevel1"
-                  fields:
-                    waterLevel: 30.5
+              examples:
+                waterLevelDetailsExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        properties:
+                          name: "WaterLevel1"
+                          displayName: "Wasserstand 1"
+                          measurement: "internal_waterLevel_1"
+                          status: "online"
+                          lastSeen: "2023-10-01T12:00:00Z"
+                          binaryStatus: 1
+                          openSenseMap: "https://opensensemap.org/explore/54321"
+                          url: "https://sensoren.makerspace-partheland.de/waterlevel1"
+                          fields:
+                            waterLevel: 30.5
