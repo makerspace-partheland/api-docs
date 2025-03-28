@@ -163,8 +163,6 @@ paths:
             type: string
           example: Beucha_Nr1
           description: "Filter für ein spezifisches senseBox-Gerät mit dessen Sensordaten"
-      security:
-        - ApiKeyAuth: []
       responses:
         '200':
           description: "Eine Liste aller senseBox-Geräte"
