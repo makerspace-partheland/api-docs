@@ -1,7 +1,64 @@
 openapi: 3.0.0
 info:
   title: LoRa Geräte API
-  description: API für den Zugriff auf LoRa-Geräte und deren Sensordaten
+  description: |
+    API für den Zugriff auf LoRa-Geräte und deren Sensordaten
+
+    # MQTT-Endpunkte
+    Neben der REST-API stehen auch MQTT-Topics zur Verfügung.
+
+    ## MQTT Broker
+    - WebSocket URL: wss://mqtt.makerspace-partheland.de:443/mqtt
+
+    ## Verfügbare Topics
+
+    ### senseBox:home Daten (entspricht REST /v1/LoRaDevices/senseboxes)
+    Topic: `senseBox:home/{device}`
+    ```json
+    {
+      "fields": {
+        "Beleuchtungsstaerke": 0,
+        "GehaeuseTemp": 9,
+        "Lautstaerke": 45.2,
+        "Lautstaerke_Max": 48.1,
+        "Luftdruck": 995.2,
+        "Luftfeuchte": 84.3,
+        "PM10": 38.2,
+        "PM10_Max": 43.5,
+        "PM2.5": 17.9,
+        "PM25_Max": 19.3,
+        "Temperatur": 7.9,
+        "UV-Intensitaet": 0
+      },
+      "name": "Beucha_Nr1",
+      "timestamp": 1743194885
+    }
+    ```
+
+    ### Sensoren Daten (enthält REST /v1/LoRaDevices/waterlevels und weitere)
+    Topic: `sensoren/{device}`
+    ```json
+    {
+      "fields": {
+        "bat": 3.264,
+        "distance": 1493,
+        "distance_to_ground": 1820,
+        "latitude": 51.000000,
+        "longitude": 12.000000,
+        "meldestufe": 0,
+        "us_sensor": 1,
+        "water": "Parthe",
+        "water_level": 327
+      },
+      "name": "LDDS75_Naunhof_1",
+      "timestamp": 1743193867
+    }
+    ```
+
+    ## Topic-Struktur
+    - `senseBox:home/`: Enthält alle senseBox-Geräte (entspricht REST /v1/LoRaDevices/senseboxes)
+    - `sensoren/`: Enthält Wasserstand-Sensoren und weitere Sensortypen (enthält REST /v1/LoRaDevices/waterlevels)
+
   version: 1.0.3
   contact:
     name: Makerspace Partheland e.V.
@@ -87,7 +144,7 @@ paths:
                           displayName: "Gerät 1"
                           status: "online"
                           lastSeen: "2023-10-01T12:00:00Z"
-                          measurement: "internal_device_1"
+                          measurement: "device_1"
                           openSenseMap: "https://opensensemap.org/explore/12345"
                           url: "https://sensoren.makerspace-partheland.de/device1"
                           fields:
@@ -97,7 +154,15 @@ paths:
 
   /v1/LoRaDevices/senseboxes:
     get:
-      summary: "Erhalte alle senseBox-Geräte"
+      summary: "Erhalte alle senseBox-Geräte mit deren Sensordaten"
+      parameters:
+        - name: device
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Beucha_Nr1
+          description: "Filter für ein spezifisches senseBox-Gerät mit dessen Sensordaten"
       security:
         - ApiKeyAuth: []
       responses:
@@ -144,11 +209,29 @@ paths:
                             fields:
                               type: object
                               properties:
-                                temperature:
+                                Beleuchtungsstaerke:
                                   type: number
-                                humidity:
+                                GehaeuseTemp:
                                   type: number
-                                pressure:
+                                Lautstaerke:
+                                  type: number
+                                Lautstaerke_Max:
+                                  type: number
+                                Luftdruck:
+                                  type: number
+                                Luftfeuchte:
+                                  type: number
+                                PM10:
+                                  type: number
+                                PM10_Max:
+                                  type: number
+                                PM2.5:
+                                  type: number
+                                PM25_Max:
+                                  type: number
+                                Temperatur:
+                                  type: number
+                                "UV-Intensitaet":
                                   type: number
               examples:
                 senseBoxExample:
@@ -160,17 +243,26 @@ paths:
                           deviceType: "senseBox"
                           binaryStatus: 1
                           active: true
-                          name: "senseBox1"
-                          displayName: "senseBox 1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
-                          measurement: "internal_senseBox_1"
-                          openSenseMap: "https://opensensemap.org/explore/67890"
-                          url: "https://sensoren.makerspace-partheland.de/sensebox1"
+                          name: "sensebox-beucha-1"
+                          displayName: "sensebox-beucha-1"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:20:09"
+                          measurement: "Beucha_Nr1"
+                          openSenseMap: "https://opensensemap.org/explore/6214b789ef6200001d2971bc"
+                          url: "https://sensoren.makerspace-partheland.de/d/XrweFEQnk/station-beucha-nr-1"
                           fields:
-                            temperature: 20.0
-                            humidity: 60.0
-                            pressure: 1012.00
+                            Beleuchtungsstaerke: 0
+                            GehaeuseTemp: 9.4
+                            Lautstaerke: 48.1
+                            Lautstaerke_Max: 49.4
+                            Luftdruck: 995.3
+                            Luftfeuchte: 86
+                            PM10: 39.7
+                            PM10_Max: 41.7
+                            PM2.5: 16.8
+                            PM25_Max: 17.9
+                            Temperatur: 8
+                            "UV-Intensitaet": 0
 
   /v1/LoRaDevices/senseboxes/health:
     get:
@@ -218,25 +310,27 @@ paths:
                       - type: "Feature"
                         properties:
                           name: "senseBox1"
-                          measurement: "internal_sensebox_1"
+                          measurement: "sensebox_1"
                           status: "online"
                           lastSeen: "2023-10-01T12:00:00Z"
 
   /v1/LoRaDevices/senseboxes/details:
     get:
-      summary: "Erhalte Details einer bestimmten senseBox:home"
+      summary: "Erhalte detaillierte Sensordaten einer bestimmten senseBox:home"
+      description: "Dieser Endpunkt liefert detaillierte Informationen und aktuelle Sensordaten einer spezifischen senseBox:home. Die Daten beinhalten alle verfügbaren Sensorwerte wie Temperatur, Luftfeuchtigkeit, Luftdruck, Feinstaubwerte und mehr."
       parameters:
         - name: device
           in: query
-          required: false
+          required: true
           schema:
             type: string
           example: Beucha_Nr1
+          description: "Name der senseBox:home, deren Details abgefragt werden sollen"
       security:
         - ApiKeyAuth: []
       responses:
         '200':
-          description: "Details einer bestimmten senseBox:home"
+          description: "Detaillierte Informationen einer senseBox:home"
           content:
             application/json:
               schema:
@@ -254,28 +348,61 @@ paths:
                         properties:
                           type: object
                           properties:
+                            binaryStatus:
+                              type: integer
+                              enum: [0, 1]
+                            active:
+                              type: boolean
                             name:
                               type: string
                             displayName:
-                              type: string
-                            measurement:
                               type: string
                             status:
                               type: string
                             lastSeen:
                               type: string
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
+                            measurement:
+                              type: string
+                            openSenseMap:
+                              type: string
+                            url:
+                              type: string
                             fields:
                               type: object
                               properties:
-                                temperature:
+                                Beleuchtungsstaerke:
                                   type: number
-                                humidity:
+                                GehaeuseTemp:
                                   type: number
-                                pressure:
+                                Lautstaerke:
                                   type: number
+                                Lautstaerke_Max:
+                                  type: number
+                                Luftdruck:
+                                  type: number
+                                Luftfeuchte:
+                                  type: number
+                                PM10:
+                                  type: number
+                                PM10_Max:
+                                  type: number
+                                PM2.5:
+                                  type: number
+                                PM25_Max:
+                                  type: number
+                                Temperatur:
+                                  type: number
+                                "UV-Intensitaet":
+                                  type: number
+                        geometry:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                            coordinates:
+                              type: array
+                              items:
+                                type: number
               examples:
                 senseBoxDetailsExample:
                   value:
@@ -283,23 +410,46 @@ paths:
                     features:
                       - type: "Feature"
                         properties:
-                          name: "senseBox1"
-                          displayName: "senseBox 1"
-                          measurement: "internal_sensebox_1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
                           binaryStatus: 1
+                          active: true
+                          name: "sensebox-beucha-1"
+                          displayName: "sensebox-beucha-1"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:20:09"
+                          measurement: "Beucha_Nr1"
+                          openSenseMap: "https://opensensemap.org/explore/6214b789ef6200001d2971bc"
+                          url: "https://sensoren.makerspace-partheland.de/d/XrweFEQnk/station-beucha-nr-1"
                           fields:
-                            temperature: 21.5
-                            humidity: 58.0
-                            pressure: 1011.50
+                            Beleuchtungsstaerke: 0
+                            GehaeuseTemp: 9.2
+                            Lautstaerke: 48
+                            Lautstaerke_Max: 51.4
+                            Luftdruck: 995.2
+                            Luftfeuchte: 85.3
+                            PM10: 34.3
+                            PM10_Max: 36.2
+                            PM2.5: 16
+                            PM25_Max: 16.3
+                            Temperatur: 7.9
+                            "UV-Intensitaet": 0
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.000000, 51.000000]
 
   /v1/LoRaDevices/waterlevels:
     get:
       summary: "Erhalte alle Wasserstand-Geräte"
+      parameters:
+        - name: device
+          in: query
+          required: false
+          schema:
+            type: string
+          example: LDDS75_Naunhof_2
+          description: "Filter für ein spezifisches Wasserstand-Gerät mit dessen Sensordaten"
       responses:
         '200':
-          description: "Eine Liste aller Wasserstand-Geräte"
+          description: "Eine Liste aller Wasserstand-Geräte mit deren Sensordaten"
           content:
             application/json:
               schema:
@@ -341,7 +491,17 @@ paths:
                             fields:
                               type: object
                               properties:
-                                waterLevel:
+                                bat:
+                                  type: number
+                                distance:
+                                  type: number
+                                distance_to_ground:
+                                  type: number
+                                meldestufe:
+                                  type: number
+                                water:
+                                  type: string
+                                water_level:
                                   type: number
               examples:
                 waterLevelExample:
@@ -351,17 +511,21 @@ paths:
                       - type: "Feature"
                         properties:
                           deviceType: "waterLevelSensor"
-                          binaryStatus: 1
                           active: true
-                          name: "WaterLevel1"
-                          displayName: "Wasserstand 1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
-                          measurement: "internal_waterLevel_1"
-                          openSenseMap: "https://opensensemap.org/explore/54321"
-                          url: "https://sensoren.makerspace-partheland.de/waterlevel1"
+                          name: "LDDS75 Naunhof 2"
+                          displayName: "LDDS75 Naunhof 2"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:05:17"
+                          measurement: "LDDS75_Naunhof_2"
+                          openSenseMap: ""
+                          url: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
                           fields:
-                            waterLevel: 30.5
+                            bat: 3.328
+                            distance: 1583
+                            distance_to_ground: 1600
+                            meldestufe: 0
+                            water: "Parthe"
+                            water_level: 17
 
   /v1/LoRaDevices/waterlevels/health:
     get:
@@ -409,25 +573,27 @@ paths:
                       - type: "Feature"
                         properties:
                           name: "WaterLevel1"
-                          measurement: "internal_waterLevel_1"
+                          measurement: "waterLevel_1"
                           status: "online"
                           lastSeen: "2023-10-01T12:00:00Z"
 
   /v1/LoRaDevices/waterlevels/details:
     get:
-      summary: "Erhalte Details eines bestimmten Wasserstand-Geräts"
+      summary: "Erhalte detaillierte Sensordaten eines bestimmten Wasserstand-Geräts"
+      description: "Dieser Endpunkt liefert detaillierte Informationen und aktuelle Sensordaten eines spezifischen Wasserstand-Sensors. Die Daten beinhalten Informationen wie Batteriestand, Distanzmessungen, Wasserstand, Gewässername und Meldestufe."
       parameters:
         - name: device
           in: query
-          required: false
+          required: true
           schema:
             type: string
-          example: LDDS75_Naunhof_1
+          example: LDDS75_Naunhof_2
+          description: "Name des Wasserstand-Geräts, dessen Details abgefragt werden sollen"
       security:
         - ApiKeyAuth: []
       responses:
         '200':
-          description: "Details eines bestimmten Wasserstand-Sensors"
+          description: "Detaillierte Informationen eines Wasserstand-Geräts"
           content:
             application/json:
               schema:
@@ -445,19 +611,23 @@ paths:
                         properties:
                           type: object
                           properties:
+                            binaryStatus:
+                              type: integer
+                              enum: [0, 1]
+                            id:
+                              type: string
+                            active:
+                              type: boolean
                             name:
                               type: string
                             displayName:
-                              type: string
-                            measurement:
                               type: string
                             status:
                               type: string
                             lastSeen:
                               type: string
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
+                            measurement:
+                              type: string
                             openSenseMap:
                               type: string
                             url:
@@ -465,8 +635,42 @@ paths:
                             fields:
                               type: object
                               properties:
-                                waterLevel:
+                                bat:
                                   type: number
+                                  description: "Batteriestand in Volt"
+                                distance:
+                                  type: number
+                                  description: "Gemessene Distanz in mm"
+                                distance_to_ground:
+                                  type: number
+                                  description: "Distanz zum Boden in mm"
+                                latitude:
+                                  type: number
+                                  description: "Breitengrad des Sensors"
+                                longitude:
+                                  type: number
+                                  description: "Längengrad des Sensors"
+                                meldestufe:
+                                  type: integer
+                                  description: "Aktuelle Hochwasser-Meldestufe"
+                                us_sensor:
+                                  type: integer
+                                  description: "Status des Ultraschall-Sensors"
+                                water:
+                                  type: string
+                                  description: "Name des Gewässers"
+                                water_level:
+                                  type: number
+                                  description: "Aktueller Wasserstand in cm"
+                        geometry:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                            coordinates:
+                              type: array
+                              items:
+                                type: number
               examples:
                 waterLevelDetailsExample:
                   value:
@@ -474,13 +678,26 @@ paths:
                     features:
                       - type: "Feature"
                         properties:
-                          name: "WaterLevel1"
-                          displayName: "Wasserstand 1"
-                          measurement: "internal_waterLevel_1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
                           binaryStatus: 1
-                          openSenseMap: "https://opensensemap.org/explore/54321"
-                          url: "https://sensoren.makerspace-partheland.de/waterlevel1"
+                          id: "eui-a84041e01188c969"
+                          active: true
+                          name: "LDDS75 Naunhof 2"
+                          displayName: "LDDS75 Naunhof 2"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:05:17"
+                          measurement: "LDDS75_Naunhof_2"
+                          openSenseMap: ""
+                          url: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
                           fields:
-                            waterLevel: 30.5
+                            bat: 3.328
+                            distance: 1583
+                            distance_to_ground: 1600
+                            latitude: 51.000000
+                            longitude: 12.000000
+                            meldestufe: 0
+                            us_sensor: 1
+                            water: "Parthe"
+                            water_level: 17
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.000000, 51.000000]
