@@ -52,11 +52,11 @@ URL: wss://mqtt.makerspace-partheland.de:443/mqtt
 ```
 **Verbindungstest mit MQTT Explorer:**
 ```
-- Protocol:ws://
-- Host:mqtt.makerspace-partheland.de/mqtt
-- Port:443
-- Encryption:on
-- Validate certificate:off 
+- Protocol: ws://
+- Host: mqtt.makerspace-partheland.de/mqtt
+- Port: 443
+- Encryption: on
+- Validate certificate: off / on  
 ```
 
 **Topics für SenseBox Daten:**
