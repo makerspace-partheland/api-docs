@@ -59,7 +59,7 @@ info:
     - `senseBox:home/`: Enthält alle senseBox-Geräte (entspricht REST /v1/LoRaDevices/senseboxes)
     - `sensoren/`: Enthält Wasserstand-Sensoren und weitere Sensortypen (enthält REST /v1/LoRaDevices/waterlevels)
 
-  version: 1.0.3
+  version: 1.0.4
   contact:
     name: Makerspace Partheland e.V.
     url: https://makerspace-partheland.de
@@ -123,12 +123,13 @@ paths:
                               type: string
                             fields:
                               type: object
+                              description: "Ein Objekt, das die verschiedenen Sensormesswerte des Geräts enthält. Die Felder variieren je nach Gerätetyp."
                               properties:
-                                temperature:
+                                Temperatur:
                                   type: number
-                                humidity:
+                                Luftfeuchte:
                                   type: number
-                                pressure:
+                                water_level:
                                   type: number
               examples:
                 loRaDeviceExample:
@@ -137,20 +138,35 @@ paths:
                     features:
                       - type: "Feature"
                         properties:
-                          deviceType: "sensor"
+                          deviceType: "senseBox"
                           binaryStatus: 1
                           active: true
-                          name: "Device1"
-                          displayName: "Gerät 1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
-                          measurement: "device_1"
-                          openSenseMap: "https://opensensemap.org/explore/12345"
-                          url: "https://sensoren.makerspace-partheland.de/device1"
+                          name: "sensebox-beucha-1"
+                          displayName: "sensebox-beucha-1"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:20:09"
+                          measurement: "Beucha_Nr1"
+                          openSenseMap: "https://opensensemap.org/explore/6214b789ef6200001d2971bc"
+                          url: "https://sensoren.makerspace-partheland.de/d/XrweFEQnk/station-beucha-nr-1"
                           fields:
-                            temperature: 22.5
-                            humidity: 55.0
-                            pressure: 1013.25
+                            Temperatur: 8
+                            Luftfeuchte: 86
+                      - type: "Feature"
+                        properties:
+                          deviceType: "waterLevelSensor"
+                          binaryStatus: 1
+                          active: true
+                          name: "LDDS75 Naunhof 2"
+                          displayName: "LDDS75 Naunhof 2"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:05:17"
+                          measurement: "LDDS75_Naunhof_2"
+                          openSenseMap: ""
+                          url: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
+                          fields:
+                            water_level: 17
+                            bat: 3.328
+                            water_temp: 15.2
 
   /v1/LoRaDevices/senseboxes:
     get:
@@ -491,16 +507,37 @@ paths:
                               properties:
                                 bat:
                                   type: number
+                                  description: "Batteriestand in Volt"
                                 distance:
                                   type: number
+                                  description: "Gemessene Distanz in mm"
                                 distance_to_ground:
                                   type: number
+                                  description: "Distanz zum Boden in mm"
                                 meldestufe:
                                   type: number
+                                  description: "Aktuelle Hochwasser-Meldestufe"
                                 water:
                                   type: string
+                                  description: "Name des Gewässers"
                                 water_level:
                                   type: number
+                                  description: "Aktueller Wasserstand in cm"
+                                water_temp:
+                                  type: number
+                                  description: "Die Wassertemperatur in Grad Celsius (falls vom Sensor unterstützt)."
+                                water_depth:
+                                  type: number
+                                  description: "Gemessene Wassertiefe in cm (falls vom Sensor unterstützt)."
+                                battery_voltage:
+                                  type: number
+                                  description: "Spannung der externen Stromversorgung in Volt (falls vom Sensor unterstützt)."
+                                current_4_20ma:
+                                  type: number
+                                  description: "Messwert des 4-20mA Analogeingangs in Milliampere (falls vom Sensor unterstützt)."
+                                voltage_input:
+                                  type: number
+                                  description: "Messwert des analogen Spannungseingangs in Volt (falls vom Sensor unterstützt)."
               examples:
                 waterLevelExample:
                   value:
@@ -524,6 +561,11 @@ paths:
                             meldestufe: 0
                             water: "Parthe"
                             water_level: 17
+                            water_temp: 15.2
+                            water_depth: 52.78
+                            battery_voltage: 3.335
+                            current_4_20ma: 6.815
+                            voltage_input: 0
 
   /v1/LoRaDevices/waterlevels/health:
     get:
@@ -563,6 +605,24 @@ paths:
                               type: string
                             lastSeen:
                               type: string
+                            water_level:
+                              type: number
+                              description: "Aktueller Wasserstand in cm"
+                            water_temp:
+                              type: number
+                              description: "Die Wassertemperatur in Grad Celsius (falls vom Sensor unterstützt)."
+                            water_depth:
+                              type: number
+                              description: "Gemessene Wassertiefe in cm (falls vom Sensor unterstützt)."
+                            battery_voltage:
+                              type: number
+                              description: "Spannung der externen Stromversorgung in Volt (falls vom Sensor unterstützt)."
+                            current_4_20ma:
+                              type: number
+                              description: "Messwert des 4-20mA Analogeingangs in Milliampere (falls vom Sensor unterstützt)."
+                            voltage_input:
+                              type: number
+                              description: "Messwert des analogen Spannungseingangs in Volt (falls vom Sensor unterstützt)."
               examples:
                 waterLevelHealthExample:
                   value:
@@ -574,6 +634,15 @@ paths:
                           measurement: "waterLevel_1"
                           status: "online"
                           lastSeen: "2023-10-01T12:00:00Z"
+                          water_level: 17
+                          water_temp: 15.2
+                          water_depth: 52.78
+                          battery_voltage: 3.335
+                          current_4_20ma: 6.815
+                          voltage_input: 0
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.000000, 51.000000]
 
   /v1/LoRaDevices/waterlevels/details:
     get:
@@ -660,6 +729,21 @@ paths:
                                 water_level:
                                   type: number
                                   description: "Aktueller Wasserstand in cm"
+                                water_temp:
+                                  type: number
+                                  description: "Die Wassertemperatur in Grad Celsius (falls vom Sensor unterstützt)."
+                                water_depth:
+                                  type: number
+                                  description: "Gemessene Wassertiefe in cm (falls vom Sensor unterstützt)."
+                                battery_voltage:
+                                  type: number
+                                  description: "Spannung der externen Stromversorgung in Volt (falls vom Sensor unterstützt)."
+                                current_4_20ma:
+                                  type: number
+                                  description: "Messwert des 4-20mA Analogeingangs in Milliampere (falls vom Sensor unterstützt)."
+                                voltage_input:
+                                  type: number
+                                  description: "Messwert des analogen Spannungseingangs in Volt (falls vom Sensor unterstützt)."
                         geometry:
                           type: object
                           properties:
@@ -696,6 +780,11 @@ paths:
                             us_sensor: 1
                             water: "Parthe"
                             water_level: 17
+                            water_temp: 15.2
+                            water_depth: 52.78
+                            battery_voltage: 3.335
+                            current_4_20ma: 6.815
+                            voltage_input: 0
                         geometry:
                           type: "Point"
                           coordinates: [12.000000, 51.000000]
