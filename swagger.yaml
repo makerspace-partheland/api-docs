@@ -68,6 +68,12 @@ servers:
   - url: https://data.makerspace-partheland.de/
     description: Produktions-Server
     
+tags:
+  - name: "API v1 - Produktiv"
+    description: "Produktive, stabile Endpunkte für den Live-Betrieb"
+  - name: "API v2 - Unter Entwicklung"
+    description: "Experimentelle Endpunkte - können sich ändern!"
+    
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -76,9 +82,40 @@ components:
       name: x-api-key
       description: API-Key für detaillierte Informationen
       
+  schemas:
+    GeoJSONResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "FeatureCollection"
+        features:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "Feature"
+              geometry:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: "Point"
+                  coordinates:
+                    type: array
+                    items:
+                      type: number
+                    example: [12.000000, 51.000000]
+              properties:
+                type: object
+                additionalProperties: true
+
 paths:
   /v1/LoRaDevices:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte alle LoRa-Geräte"
       responses:
         '200':
@@ -170,6 +207,7 @@ paths:
 
   /v1/LoRaDevices/senseboxes:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte alle senseBox-Geräte mit deren Sensordaten"
       parameters:
         - name: device
@@ -280,6 +318,7 @@ paths:
 
   /v1/LoRaDevices/senseboxes/health:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte den Status der senseBox-Geräte"
       parameters:
         - name: device
@@ -330,6 +369,7 @@ paths:
 
   /v1/LoRaDevices/senseboxes/details:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte detaillierte Sensordaten einer bestimmten senseBox:home"
       description: "Dieser Endpunkt liefert detaillierte Informationen und aktuelle Sensordaten einer spezifischen senseBox:home. Die Daten beinhalten alle verfügbaren Sensorwerte wie Temperatur, Luftfeuchtigkeit, Luftdruck, Feinstaubwerte und mehr."
       parameters:
@@ -452,6 +492,7 @@ paths:
 
   /v1/LoRaDevices/waterlevels:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte alle Wasserstand-Geräte"
       parameters:
         - name: device
@@ -569,6 +610,7 @@ paths:
 
   /v1/LoRaDevices/waterlevels/health:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte den Status der Wasserstand-Geräte"
       parameters:
         - name: device
@@ -646,6 +688,7 @@ paths:
 
   /v1/LoRaDevices/waterlevels/details:
     get:
+      tags: ["API v1 - Produktiv"]
       summary: "Erhalte detaillierte Sensordaten eines bestimmten Wasserstand-Geräts"
       description: "Dieser Endpunkt liefert detaillierte Informationen und aktuelle Sensordaten eines spezifischen Wasserstand-Sensors. Die Daten beinhalten Informationen wie Batteriestand, Distanzmessungen, Wasserstand, Gewässername und Meldestufe."
       parameters:
@@ -788,3 +831,243 @@ paths:
                         geometry:
                           type: "Point"
                           coordinates: [12.000000, 51.000000]
+
+  /v2/geojson/devices:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte alle Geräte im GeoJSON-Format (v2)"
+      description: "Neue API-Version mit verbesserter GeoJSON-Struktur und erweiterten Metadaten"
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+          description: "Filter für Gerätetyp"
+        - name: device
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Filter für ein spezifisches Gerät"
+      responses:
+        '200':
+          description: "GeoJSON-FeatureCollection mit allen Geräten"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: "FeatureCollection"
+                  features:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          example: "Feature"
+                        geometry:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              example: "Point"
+                            coordinates:
+                              type: array
+                              items:
+                                type: number
+                              example: [12.000000, 51.000000]
+                        properties:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              description: "Eindeutige Geräte-ID"
+                            name:
+                              type: string
+                              description: "Anzeigename des Geräts"
+                            deviceType:
+                              type: string
+                              enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+                              description: "Typ des Geräts"
+                            status:
+                              type: string
+                              enum: [Online, Offline, Pending]
+                              description: "Aktueller Status"
+                            lastSeen:
+                              type: string
+                              description: "Letzter Kontakt (deutsche Zeit)"
+                            measurement:
+                              type: string
+                              description: "Messwert-Identifier"
+                            fields:
+                              type: object
+                              description: "Aktuelle Sensordaten"
+              examples:
+                v2GeoJSONExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.000000, 51.000000]
+                        properties:
+                          id: "eui-a84041e01188c969"
+                          name: "sensebox-beucha-1"
+                          deviceType: "SenseBoxDevice"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:20:09"
+                          measurement: "Beucha_Nr1"
+                          fields:
+                            Temperatur: 8.0
+                            Luftfeuchte: 86.0
+                            Luftdruck: 995.3
+                      - type: "Feature"
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.500000, 51.200000]
+                        properties:
+                          id: "eui-a840410000000101"
+                          name: "LSN50 001 Kirchbruch Beucha"
+                          deviceType: "TemperatureDevice"
+                          status: "Online"
+                          lastSeen: "28.3.2025, 21:15:30"
+                          measurement: "LSN50_001_Kirchbruch_Beucha"
+                          fields:
+                            BatV: 3.2
+                            TempC1: 12.5
+                            TempC2: 11.8
+
+  /v2/geojson/devices/{type}:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte Geräte eines spezifischen Typs im GeoJSON-Format (v2)"
+      description: "Filtert Geräte nach Typ (SenseBoxDevice, WaterLevelDevice oder TemperatureDevice)"
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+          description: "Gerätetyp"
+        - name: device
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Filter für ein spezifisches Gerät"
+      responses:
+        '200':
+          description: "GeoJSON-FeatureCollection mit gefilterten Geräten"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoJSONResponse'
+        '400':
+          description: "Ungültiger Gerätetyp"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid device type. Use 'SenseBoxDevice', 'WaterLevelDevice' or 'TemperatureDevice'"
+
+  /v2/ngsi-ld/entities:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte Geräte im NGSI-LD Format (v2)"
+      description: "Neue API-Version mit NGSI-LD Kontext für Smart City Anwendungen"
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [WaterLevelDevice, SenseBoxDevice, TemperatureDevice]
+          description: "NGSI-LD Entity-Typ"
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2, LSN50_001_Kirchbruch_Beucha) – keine URN!"
+          example: LSN50_001_Kirchbruch_Beucha
+      responses:
+        '200':
+          description: "NGSI-LD Entities"
+          content:
+            application/ld+json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: "NGSI-LD Entity ID"
+                    type:
+                      type: string
+                      description: "NGSI-LD Entity Type"
+                    "@context":
+                      type: array
+                      items:
+                        type: string
+                      description: "NGSI-LD Context URLs"
+                    properties:
+                      type: object
+                      description: "Entity Properties"
+              examples:
+                ngsiLdExample:
+                  value:
+                    - id: "urn:ngsi-ld:WaterLevelDevice:LDDS75_Naunhof_2"
+                      type: "WaterLevelDevice"
+                      "@context":
+                        - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+                        - "https://makerspace-partheland.de/ngsi-ld/v1/"
+                      properties:
+                        name:
+                          type: "Property"
+                          value: "LDDS75 Naunhof 2"
+                        waterLevel:
+                          type: "Property"
+                          value: 17.0
+                          unitCode: "CMTR"
+                        location:
+                          type: "GeoProperty"
+                          value:
+                            type: "Point"
+                            coordinates: [12.000000, 51.000000]
+                    - id: "urn:ngsi-ld:TemperatureDevice:LSN50_001_Kirchbruch_Beucha"
+                      type: "TemperatureDevice"
+                      "@context":
+                        - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+                        - "https://makerspace-partheland.de/ngsi-ld/v1/"
+                      properties:
+                        name:
+                          type: "Property"
+                          value: "LSN50 001 Kirchbruch Beucha"
+                        temperature1:
+                          type: "Property"
+                          value: 12.5
+                          unitCode: "CEL"
+                        temperature2:
+                          type: "Property"
+                          value: 11.8
+                          unitCode: "CEL"
+                        batteryVoltage:
+                          type: "Property"
+                          value: 3.2
+                          unitCode: "VLT"
+                        location:
+                          type: "GeoProperty"
+                          value:
+                            type: "Point"
+                            coordinates: [12.500000, 51.200000]
