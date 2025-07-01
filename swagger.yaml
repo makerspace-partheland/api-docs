@@ -844,13 +844,13 @@ paths:
           schema:
             type: string
             enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
-          description: "Filter für Gerätetyp"
+          description: "Filter für Gerätetyp (Dropdown)"
         - name: device
           in: query
           required: false
           schema:
             type: string
-          description: "Filter für ein spezifisches Gerät"
+          description: "Filter für ein spezifisches Gerät (frei eingeben)"
       responses:
         '200':
           description: "GeoJSON-FeatureCollection mit allen Geräten"
@@ -955,13 +955,13 @@ paths:
           schema:
             type: string
             enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
-          description: "Gerätetyp"
+          description: "Gerätetyp (Dropdown)"
         - name: device
           in: query
           required: false
           schema:
             type: string
-          description: "Filter für ein spezifisches Gerät"
+          description: "Filter für ein spezifisches Gerät (frei eingeben)"
       responses:
         '200':
           description: "GeoJSON-FeatureCollection mit gefilterten Geräten"
@@ -992,13 +992,13 @@ paths:
           schema:
             type: string
             enum: [WaterLevelDevice, SenseBoxDevice, TemperatureDevice]
-          description: "NGSI-LD Entity-Typ"
+          description: "NGSI-LD Entity-Typ (Dropdown)"
         - name: id
           in: query
           required: false
           schema:
             type: string
-          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2, LSN50_001_Kirchbruch_Beucha) – keine URN!"
+          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2, LSN50_001_Kirchbruch_Beucha) – keine URN! (frei eingeben)"
           example: LSN50_001_Kirchbruch_Beucha
       responses:
         '200':
