@@ -229,7 +229,7 @@ components:
               items:
                 type: number
               example: [12.000000, 51.000000]
-           description: "WGS84-Geometrie des Geräts; Koordinaten in der Form [Längengrad, Breitengrad]."
+          description: "WGS84-Geometrie des Geräts; Koordinaten in der Form [Längengrad, Breitengrad]."
         properties:
           $ref: '#/components/schemas/DevicePropertiesV2'
 
@@ -243,6 +243,94 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DeviceFeatureV2'
+
+    # Standort-Aggregation (location + sensor) als eigenes Feature-Schema
+    AggregatedLocationPropertiesV2:
+      type: object
+      properties:
+        location:
+          type: string
+          description: "Standortname (z. B. naunhof)"
+        sensor:
+          type: string
+          description: "Sensorname (z. B. temperature)"
+        aggregation:
+          type: string
+          enum: [median, mean, min, max, latest]
+          description: "Aggregationsmethode"
+        value:
+          type: number
+          nullable: true
+          description: "Aggregierter Messwert"
+        unit:
+          type: string
+          description: "Einheiten-Code (z. B. CEL, DB, LX, MMT)"
+        deviceCount:
+          type: integer
+          description: "Anzahl einbezogener Geräte"
+        devices:
+          type: array
+          description: "Liste der Measurement-Namen beteiligter Geräte"
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+          description: "Erzeugungszeitpunkt der Aggregation (UTC)"
+
+    AggregatedLocationFeatureV2:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "Feature"
+        geometry:
+          type: object
+          properties:
+            type:
+              type: string
+              example: "Point"
+            coordinates:
+              type: array
+              items:
+                type: number
+              example: [12.586797, 51.283337]
+        properties:
+          $ref: '#/components/schemas/AggregatedLocationPropertiesV2'
+
+    DeviceOrLocationGeoJSONResponseV2:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "FeatureCollection"
+        features:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/DeviceFeatureV2'
+              - $ref: '#/components/schemas/AggregatedLocationFeatureV2'
+
+    ErrorResponseV2:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: "Fehlercode (z. B. INVALID_PARAMETER_COMBINATION, INVALID_SENSOR, INVALID_API_KEY, NOT_FOUND)"
+            message:
+              type: string
+              description: "Beschreibung des Fehlers"
+            details:
+              type: object
+              additionalProperties: true
+              description: "Optionale Detailinformationen"
+        timestamp:
+          type: string
+          format: date-time
+          description: "Zeitpunkt der Fehlererzeugung (UTC)"
 
     AttributesPublicV2:
       type: object
@@ -1012,6 +1100,12 @@ paths:
           schema:
             type: string
           description: "Filter für ein spezifisches Gerät (frei eingeben)"
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Alias zu 'device'; Geräte-ID oder Measurement-Name (z. B. Beucha_Nr1)."
         - name: location
           in: query
           required: false
@@ -1050,7 +1144,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeviceGeoJSONResponseV2'
+                $ref: '#/components/schemas/DeviceOrLocationGeoJSONResponseV2'
               examples:
                 senseBox:
                   summary: "SenseBox-Gerät mit Detaildaten"
@@ -1130,10 +1224,22 @@ paths:
                           timestamp: "2025-10-11T19:35:14.264Z"
         '400':
           description: "Ungültiger Parameter (z.B. falsche Kombination von location/sensor mit type/id, unbekannter Sensor oder Aggregation)."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
         '401':
           description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
         '404':
           description: "Kein Gerät bzw. keine Messwerte zur Abfrage gefunden."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
 
   /v2/geojson/devices/{type}:
     get:
@@ -1173,18 +1279,22 @@ paths:
                 $ref: '#/components/schemas/DeviceGeoJSONResponseV2'
         '401':
           description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
         '404':
           description: "Kein Gerät für die Kombination aus Typ und Filter gefunden."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
         '400':
           description: "Ungültiger Gerätetyp"
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid device type. Use 'SenseBoxDevice', 'WaterLevelDevice' or 'TemperatureDevice'"
+                $ref: '#/components/schemas/ErrorResponseV2'
 
   /v2/ngsi-ld/entities:
     get:
@@ -1387,7 +1497,7 @@ paths:
         '404':
           description: "Kein Gerät bzw. keine Messwerte zur Abfrage gefunden."
 
-/v2/geojson/history/devices/{id}:
+  /v2/geojson/history/devices/{id}:
     get:
       tags: ["API v2 - Unter Entwicklung"]
       summary: "Historische Messwerte im GeoJSON-Format (v2)"
@@ -1445,7 +1555,7 @@ paths:
         '404':
           description: "Keine Messwerte für die Kombination aus Gerät und Zeitraum gefunden"
 
-/v2/ngsi-ld/temporal/entities/{id}:
+  /v2/ngsi-ld/temporal/entities/{id}:
     get:
       tags: ["API v2 - Unter Entwicklung"]
       summary: "Historische Messwerte im NGSI-LD-Temporalformat (v2)"
@@ -1503,3 +1613,183 @@ paths:
           description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
         '404':
           description: "Keine Messwerte für die Kombination aus Gerät und Zeitraum gefunden"
+
+  /v2/geojson/gateways:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte Gateways im GeoJSON-Format (v2)"
+      description: |
+        Liefert alle bekannten Gateways als GeoJSON-FeatureCollection. Status basiert auf den letzten Status-/Uplink-Zeitpunkten.
+      parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z. B. interne Metadaten)."
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Gateway-ID (optional)"
+      responses:
+        '200':
+          description: "GeoJSON-FeatureCollection mit Gateways"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoJSONResponse'
+              examples:
+                gatewayExample:
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        id: "db-ware-gateway-dreimu-001"
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.467993795871735, 51.218953978312285]
+                        properties:
+                          name: "db-ware Gateway Dreiskau-Muckern 001"
+                          type: "Gateway"
+                          attributes: {}
+                          last_seen_de: "11.10.2025, 23:46:21"
+                          last_seen: "2025-10-11T21:46:21.362Z"
+                          status: "Online"
+        '400':
+          description: "Ungültiger Parameter"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '401':
+          description: "API-Key erforderlich oder ungültig"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '404':
+          description: "Kein Gateway gefunden"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+
+  /v2/geojson/gateways/{id}:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte ein Gateway im GeoJSON-Format (v2)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Gateway-ID"
+      responses:
+        '200':
+          description: "GeoJSON-FeatureCollection mit einem Gateway"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoJSONResponse'
+        '404':
+          description: "Gateway nicht gefunden"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+
+  /v2/ngsi-ld/entities/gateways:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte Gateways im NGSI-LD-Format (v2)"
+      parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z. B. interne Metadaten)."
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Gateway-ID (optional)"
+      responses:
+        '200':
+          description: "NGSI-LD Gateway Entities"
+          content:
+            application/ld+json:
+              schema:
+                type: array
+                items:
+                  type: object
+              examples:
+                gatewayNgsiExample:
+                  value:
+                    - id: "urn:ngsi-ld:Gateway:db-ware-gateway-dreimu-001"
+                      type: "Gateway"
+                      name:
+                        type: "Property"
+                        value: "db-ware Gateway Dreiskau-Muckern 001"
+                      gatewayType:
+                        type: "Property"
+                        value: "LoRaWAN"
+                      location:
+                        type: "GeoProperty"
+                        value:
+                          type: "Point"
+                          coordinates: [12.467993795871735, 51.218953978312285]
+                      status:
+                        type: "Property"
+                        value: "Online"
+                        observedAt: "2025-10-11T21:46:21.362Z"
+                      "@context":
+                        - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+                        - "https://makerspace-partheland.de/ngsi-ld/v1/"
+        '400':
+          description: "Ungültiger Parameter"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '401':
+          description: "API-Key erforderlich oder ungültig"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '404':
+          description: "Kein Gateway gefunden"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+
+  /v2/ngsi-ld/entities/gateways/{id}:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Erhalte ein Gateway im NGSI-LD-Format (v2)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Gateway-ID"
+      responses:
+        '200':
+          description: "NGSI-LD Gateway Entity"
+          content:
+            application/ld+json:
+              schema:
+                type: object
+        '404':
+          description: "Gateway nicht gefunden"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
