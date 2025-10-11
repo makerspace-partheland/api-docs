@@ -110,7 +110,159 @@ components:
                     example: [12.000000, 51.000000]
               properties:
                 type: object
+                description: "Gerätespezifische Attribute; insbesondere enthalten `osm` (openSenseMap) und `mspl` (Makerspace Partheland) URLs zu den jeweiligen Portalen mit UI-basierten Messwertansichten."
                 additionalProperties: true
+
+    MeasurementValueV2:
+      type: object
+      description: "Ein Messwert mit Einheit und Zeitstempel (ISO 8601)."
+      properties:
+        value:
+          type: number
+          description: "Gemessener Wert"
+        unit:
+          type: string
+          description: "Einheiten-Code nach internationalem Standard (z. B. UN/CEFACT Recommendation 20/21), z. B. CEL, HPA, LX, DB, GQ, MMT, VLT"
+        timestamp:
+          type: string
+          format: date-time
+          description: "Zeitpunkt der Messung (UTC)"
+
+    MeasurementsV2:
+      type: object
+      description: "Sammlung der aktuellen Sensormesswerte des Geräts. Schlüssel entsprechen den standardisierten Feldnamen."
+      properties:
+        temperature:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Lufttemperatur (Einheit CEL)"
+        temperature_case:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Gehäusetemperatur (Einheit CEL)"
+        humidity:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Relative Luftfeuchte (Einheit P1 = Prozent)"
+        pressure:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Luftdruck (Einheit HPA)"
+        illuminance:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Beleuchtungsstärke (Einheit LX)"
+        uv:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "UV-Intensität (Einheit UV)"
+        noise:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Schallpegel (Einheit DB)"
+        noise_max:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Maximaler Schallpegel im Messintervall (Einheit DB)"
+        pm10:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Feinstaub PM10 Massenkonzentration (Einheit GQ)"
+        pm10_max:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Maximaler PM10-Wert im Messintervall (Einheit GQ)"
+        pm2_5:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Feinstaub PM2.5 Massenkonzentration (Einheit GQ)"
+        pm2_5_max:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Maximaler PM2.5-Wert im Messintervall (Einheit GQ)"
+        water_level:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Wasserstand (Einheit MMT)"
+        distance:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Abstand (Einheit MMT)"
+        distance_to_ground:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Abstand zum Boden (Einheit MMT)"
+        battery:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Batteriespannung (Einheit VLT)"
+        water_temperature:
+          $ref: '#/components/schemas/MeasurementValueV2'
+          description: "Wassertemperatur (Einheit CEL)"
+
+    DevicePropertiesV2:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Name des Geräts (technischer Name; nicht 'displayname')"
+        type:
+          type: string
+          description: "Typ des Geräts (SenseBoxDevice, WaterLevelDevice, TemperatureDevice)"
+        status:
+          type: string
+          enum: [online, offline, pending, Online, Offline, Pending]
+          description: "Aktueller Status"
+        last_seen:
+          type: string
+          format: date-time
+          description: "Letzter Kontakt (UTC)"
+        last_seen_de:
+          type: string
+          description: "Letzter Kontakt (deutsche Zeit)"
+        attributes:
+          $ref: '#/components/schemas/AttributesPublicV2'
+        measurements:
+          $ref: '#/components/schemas/MeasurementsV2'
+
+    DeviceFeatureV2:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "Feature"
+        id:
+          type: string
+          description: "Eindeutige Geräte-ID"
+        geometry:
+          type: object
+          properties:
+            type:
+              type: string
+              example: "Point"
+            coordinates:
+              type: array
+              items:
+                type: number
+              example: [12.000000, 51.000000]
+           description: "WGS84-Geometrie des Geräts; Koordinaten in der Form [Längengrad, Breitengrad]."
+        properties:
+          $ref: '#/components/schemas/DevicePropertiesV2'
+
+    DeviceGeoJSONResponseV2:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "FeatureCollection"
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceFeatureV2'
+
+    AttributesPublicV2:
+      type: object
+      description: "Öffentliche Geräteattribute mit Portal-Links und Anzeigeinformationen."
+      properties:
+        osm:
+          type: string
+          format: uri
+          description: "Link zur openSenseMap-Geräteseite (UI mit Messwerten)."
+        mspl:
+          type: string
+          format: uri
+          description: "Link zur Makerspace-Partheland-Visualisierung (UI mit Messwerten)."
+        measurement:
+          type: string
+          description: "Interner Messwert-/Measurement-Name des Geräts."
+        displayname:
+          type: string
+          description: "Nutzerfreundlicher Anzeigename des Geräts."
+      additionalProperties: true
 
 paths:
   /v1/LoRaDevices:
@@ -836,8 +988,17 @@ paths:
     get:
       tags: ["API v2 - Unter Entwicklung"]
       summary: "Erhalte alle Geräte im GeoJSON-Format (v2)"
-      description: "Neue API-Version mit verbesserter GeoJSON-Struktur und erweiterten Metadaten"
+      description: |
+        Neue API-Version mit verbesserter GeoJSON-Struktur und erweiterten Metadaten.
+        Live-Daten befinden sich kurz vor dem Abschluss der Entwicklung; die Datenmodelle gelten als stabil, lediglich Detailanpassungen sind noch möglich.
+        Die Attribute `osm` (openSenseMap) und `mspl` (Makerspace Partheland) liefern Links zu Visualisierungsoberflächen, auf denen Messwerte im jeweiligen Portal eingesehen werden können.
       parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z.B. interne Metadaten); ohne Key werden nur freigegebene Attribute ausgegeben."
         - name: type
           in: query
           required: false
@@ -851,104 +1012,145 @@ paths:
           schema:
             type: string
           description: "Filter für ein spezifisches Gerät (frei eingeben)"
+        - name: location
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Standort-Aggregation (z.B. naunhof, brandis oder * für alle Standorte im Partheland)."
+        - name: sensor
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [temperature, noise, humidity, pressure, water_level, pm10, pm2_5, uv, illuminance]
+          description: |
+            Sensorname für Standort-Aggregation. Muss zusammen mit `location` angegeben werden.
+            Unterstützte Sensoren:
+            - temperature (CEL): Lufttemperatur
+            - noise (DB): Schallpegel
+            - humidity (P1): relative Luftfeuchte
+            - pressure (HPA): Luftdruck
+            - water_level (MMT): Wasserstand
+            - pm10 (GQ): Feinstaub PM10
+            - pm2_5 (GQ): Feinstaub PM2.5
+            - uv (UV): UV-Intensität
+            - illuminance (LX): Beleuchtungsstärke
+        - name: aggregation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [median, mean, min, max, latest]
+            default: median
+          description: "Aggregation für Standort-Aggregation (Standard: median)."
       responses:
         '200':
-          description: "GeoJSON-FeatureCollection mit allen Geräten"
+          description: "GeoJSON-FeatureCollection mit allen Geräten oder Standort-Aggregationen"
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                    example: "FeatureCollection"
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                          example: "Feature"
-                        geometry:
-                          type: object
-                          properties:
-                            type:
-                              type: string
-                              example: "Point"
-                            coordinates:
-                              type: array
-                              items:
-                                type: number
-                              example: [12.000000, 51.000000]
-                        properties:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              description: "Eindeutige Geräte-ID"
-                            name:
-                              type: string
-                              description: "Anzeigename des Geräts"
-                            deviceType:
-                              type: string
-                              enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
-                              description: "Typ des Geräts"
-                            status:
-                              type: string
-                              enum: [Online, Offline, Pending]
-                              description: "Aktueller Status"
-                            lastSeen:
-                              type: string
-                              description: "Letzter Kontakt (deutsche Zeit)"
-                            measurement:
-                              type: string
-                              description: "Messwert-Identifier"
-                            fields:
-                              type: object
-                              description: "Aktuelle Sensordaten"
+                $ref: '#/components/schemas/DeviceGeoJSONResponseV2'
               examples:
-                v2GeoJSONExample:
+                senseBox:
+                  summary: "SenseBox-Gerät mit Detaildaten"
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        id: "mspl-70b3d57ed004ce79"
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.586797, 51.283337]
+                        properties:
+                          name: "sensebox-naunhof"
+                          type: "SenseBoxDevice"
+                          status: "online"
+                          last_seen: "2025-10-11T19:31:10.538Z"
+                          last_seen_de: "11.10.2025, 21:31:10"
+                          attributes:
+                            osm: "https://opensensemap.org/explore/62115bc4e00700001bec2e11"
+                            mspl: "https://sensoren.makerspace-partheland.de/d/f03fd776-08e7-4537-a463-b13c85e415e1/station-naunhof-nr-1"
+                            measurement: "Naunhof_Nr1"
+                            displayname: "Naunhof Nr 1"
+                          measurements:
+                            temperature:
+                              value: 13.8
+                              unit: "CEL"
+                              timestamp: "2025-10-11T19:34:22.000Z"
+                          pm2_5:
+                            value: 4.2
+                            unit: "GQ"
+                            timestamp: "2025-10-11T19:34:22.000Z"
+                waterLevel:
+                  summary: "Wasserstandssensor (WaterLevelDevice)"
+                  value:
+                    type: "FeatureCollection"
+                    features:
+                      - type: "Feature"
+                        id: "eui-a84041a17359b296"
+                        geometry:
+                          type: "Point"
+                          coordinates: [12.581094503402712, 51.28500540377473]
+                        properties:
+                          name: "LDDS75 Naunhof 1"
+                          type: "WaterLevelDevice"
+                          status: "online"
+                          last_seen: "2025-10-11T20:37:38.828Z"
+                          last_seen_de: "11.10.2025, 22:37:38"
+                          attributes:
+                            mspl: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
+                            measurement: "LDDS75_Naunhof_1"
+                            displayname: "Parthe 1"
+                          measurements:
+                            water_level:
+                              value: 180
+                              unit: "MMT"
+                              timestamp: "2025-10-11T21:17:32.000Z"
+                locationAggregation:
+                  summary: "Standort-Aggregation (location + sensor)"
                   value:
                     type: "FeatureCollection"
                     features:
                       - type: "Feature"
                         geometry:
                           type: "Point"
-                          coordinates: [12.000000, 51.000000]
+                          coordinates: [12.586797, 51.283337]
                         properties:
-                          id: "eui-a84041e01188c969"
-                          name: "sensebox-beucha-1"
-                          deviceType: "SenseBoxDevice"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:20:09"
-                          measurement: "Beucha_Nr1"
-                          fields:
-                            Temperatur: 8.0
-                            Luftfeuchte: 86.0
-                            Luftdruck: 995.3
-                      - type: "Feature"
-                        geometry:
-                          type: "Point"
-                          coordinates: [12.500000, 51.200000]
-                        properties:
-                          id: "eui-a840410000000101"
-                          name: "LSN50 001 Kirchbruch Beucha"
-                          deviceType: "TemperatureDevice"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:15:30"
-                          measurement: "LSN50_001_Kirchbruch_Beucha"
-                          fields:
-                            BatV: 3.2
-                            TempC1: 12.5
-                            TempC2: 11.8
+                          location: "naunhof"
+                          sensor: "temperature"
+                          aggregation: "median"
+                          value: 13.7
+                          unit: "CEL"
+                          deviceCount: 8
+                          devices:
+                            - "Naunhof_Nr1"
+                            - "Naunhof_Nr3"
+                            - "Naunhof_Nr5"
+                          timestamp: "2025-10-11T19:35:14.264Z"
+        '400':
+          description: "Ungültiger Parameter (z.B. falsche Kombination von location/sensor mit type/id, unbekannter Sensor oder Aggregation)."
+        '401':
+          description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+        '404':
+          description: "Kein Gerät bzw. keine Messwerte zur Abfrage gefunden."
 
   /v2/geojson/devices/{type}:
     get:
       tags: ["API v2 - Unter Entwicklung"]
       summary: "Erhalte Geräte eines spezifischen Typs im GeoJSON-Format (v2)"
-      description: "Filtert Geräte nach Typ (SenseBoxDevice, WaterLevelDevice oder TemperatureDevice)"
+      description: |
+        Filtert Geräte nach Typ (SenseBoxDevice, WaterLevelDevice oder TemperatureDevice).
+        Live-Daten befinden sich kurz vor dem Abschluss der Entwicklung; größere Änderungen an den GeoJSON-Strukturen sind derzeit nicht geplant.
+        Die Attribute `osm` (openSenseMap) und `mspl` (Makerspace Partheland) verlinken direkt auf die jeweiligen Portale zur Visualisierung derselben Messwerte.
+        Standort-Aggregationen (`location`, `sensor`, `aggregation`) sind auf der Typ-Route derzeit nicht verfügbar und für eine zukünftige Version geplant; nutzen Sie dafür /v2/geojson/devices.
       parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z.B. interne Metadaten); ohne Key werden nur freigegebene Attribute ausgegeben."
         - name: type
           in: path
           required: true
@@ -968,7 +1170,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GeoJSONResponse'
+                $ref: '#/components/schemas/DeviceGeoJSONResponseV2'
+        '401':
+          description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+        '404':
+          description: "Kein Gerät für die Kombination aus Typ und Filter gefunden."
         '400':
           description: "Ungültiger Gerätetyp"
           content:
@@ -984,8 +1190,18 @@ paths:
     get:
       tags: ["API v2 - Unter Entwicklung"]
       summary: "Erhalte Geräte im NGSI-LD Format (v2)"
-      description: "Neue API-Version mit NGSI-LD Kontext für Smart City Anwendungen"
+      description: |
+        Neue API-Version mit NGSI-LD Kontext für Smart City Anwendungen.
+        Live-Daten befinden sich kurz vor dem Abschluss der Entwicklung; größere Änderungen an den vorhandenen Entitäten sind nur noch in Ausnahmefällen zu erwarten.
+        Die Attribute `osm` (openSenseMap) und `mspl` (Makerspace Partheland) innerhalb der bereitgestellten Gerätedaten verweisen auf die jeweiligen UI-Portale mit identischen Messwerten.
+        Standort-Aggregationen (`location`, `sensor`, `aggregation`) liefern NGSI-LD Location-Entitäten mit aggregierten Messwerten je Standort.
       parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z.B. interne Metadaten); ohne Key werden nur freigegebene Attribute ausgegeben."
         - name: type
           in: query
           required: false
@@ -1000,6 +1216,38 @@ paths:
             type: string
           description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2, LSN50_001_Kirchbruch_Beucha) – keine URN! (frei eingeben)"
           example: LSN50_001_Kirchbruch_Beucha
+        - name: location
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Standort-Aggregation (z.B. naunhof, brandis oder * für alle Standorte)."
+        - name: sensor
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [temperature, noise, humidity, pressure, water_level, pm10, pm2_5, uv, illuminance]
+          description: |
+            Sensorname für Standort-Aggregation. Muss zusammen mit `location` angegeben werden.
+            Unterstützte Sensoren:
+            - temperature (CEL): Lufttemperatur
+            - noise (DB): Schallpegel
+            - humidity (P1): relative Luftfeuchte
+            - pressure (HPA): Luftdruck
+            - water_level (MMT): Wasserstand
+            - pm10 (GQ): Feinstaub PM10
+            - pm2_5 (GQ): Feinstaub PM2.5
+            - uv (UV): UV-Intensität
+            - illuminance (LX): Beleuchtungsstärke
+        - name: aggregation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [median, mean, min, max, latest]
+            default: median
+          description: "Aggregation für Standort-Aggregation (Standard: median)."
       responses:
         '200':
           description: "NGSI-LD Entities"
@@ -1027,47 +1275,231 @@ paths:
               examples:
                 ngsiLdExample:
                   value:
-                    - id: "urn:ngsi-ld:WaterLevelDevice:LDDS75_Naunhof_2"
+                    - id: "urn:ngsi-ld:Device:eui-a84041a17359b296"
                       type: "WaterLevelDevice"
                       "@context":
                         - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
                         - "https://makerspace-partheland.de/ngsi-ld/v1/"
-                      properties:
-                        name:
-                          type: "Property"
-                          value: "LDDS75 Naunhof 2"
-                        waterLevel:
-                          type: "Property"
-                          value: 17.0
-                          unitCode: "CMTR"
-                        location:
-                          type: "GeoProperty"
-                          value:
-                            type: "Point"
-                            coordinates: [12.000000, 51.000000]
-                    - id: "urn:ngsi-ld:TemperatureDevice:LSN50_001_Kirchbruch_Beucha"
+                      name:
+                        type: "Property"
+                        value: "LDDS75 Naunhof 1"
+                      deviceType:
+                        type: "Property"
+                        value: "waterlevel"
+                      location:
+                        type: "GeoProperty"
+                        value:
+                          type: "Point"
+                          coordinates: [12.581094503402712, 51.28500540377473]
+                      status:
+                        type: "Property"
+                        value: "online"
+                        observedAt: "2025-10-11T20:37:38.828Z"
+                      battery:
+                        type: "Property"
+                        value: 3.283
+                        unitCode: "VLT"
+                        observedAt: "2025-10-11T21:17:32.000Z"
+                      distance:
+                        type: "Property"
+                        value: 1640
+                        unitCode: "MMT"
+                        observedAt: "2025-10-11T21:17:32.000Z"
+                      distance_to_ground:
+                        type: "Property"
+                        value: 1820
+                        unitCode: "MMT"
+                        observedAt: "2025-10-11T21:17:32.000Z"
+                      water_name:
+                        type: "Property"
+                        value: "Parthe 1"
+                        unitCode: "C62"
+                        observedAt: "2025-10-11T21:17:32.000Z"
+                      water_level:
+                        type: "Property"
+                        value: 180
+                        unitCode: "MMT"
+                        observedAt: "2025-10-11T21:17:32.000Z"
+                    - id: "urn:ngsi-ld:Device:eui-a840410000000101"
                       type: "TemperatureDevice"
                       "@context":
                         - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
                         - "https://makerspace-partheland.de/ngsi-ld/v1/"
-                      properties:
-                        name:
-                          type: "Property"
-                          value: "LSN50 001 Kirchbruch Beucha"
-                        temperature1:
-                          type: "Property"
-                          value: 12.5
-                          unitCode: "CEL"
-                        temperature2:
-                          type: "Property"
-                          value: 11.8
-                          unitCode: "CEL"
-                        batteryVoltage:
-                          type: "Property"
-                          value: 3.2
-                          unitCode: "VLT"
-                        location:
-                          type: "GeoProperty"
-                          value:
-                            type: "Point"
-                            coordinates: [12.500000, 51.200000]
+                      name:
+                        type: "Property"
+                        value: "LSN50 001 Kirchbruch Beucha"
+                      deviceType:
+                        type: "Property"
+                        value: "temperature"
+                      location:
+                        type: "GeoProperty"
+                        value:
+                          type: "Point"
+                          coordinates: [12.567174780249111, 51.32401979862517]
+                      status:
+                        type: "Property"
+                        value: "online"
+                        observedAt: "2025-10-11T21:07:58.237Z"
+                      temperature_1:
+                        type: "Property"
+                        value: 14.4
+                        unitCode: "CEL"
+                        observedAt: "2025-10-11T21:07:51.000Z"
+                      temperature_2:
+                        type: "Property"
+                        value: 13.1
+                        unitCode: "CEL"
+                        observedAt: "2025-10-11T21:07:51.000Z"
+                locationAggregation:
+                  summary: "Standort-Aggregation (location + sensor)"
+                  value:
+                    id: "urn:ngsi-ld:Location:naunhof"
+                    type: "Location"
+                    location:
+                      type: "GeoProperty"
+                      value:
+                        type: "Point"
+                        coordinates: [12.586797, 51.283337]
+                    temperature:
+                      type: "Property"
+                      value: 13.7
+                      unitCode: "CEL"
+                      observedAt: "2025-10-11T19:35:14.264Z"
+                    aggregation:
+                      type: "Property"
+                      value: "median"
+                    deviceCount:
+                      type: "Property"
+                      value: 8
+                    devices:
+                      type: "Property"
+                      value:
+                        - "Naunhof_Nr1"
+                        - "Naunhof_Nr3"
+                        - "Naunhof_Nr5"
+                    "@context":
+                      - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+                      - "https://makerspace-partheland.de/ngsi-ld/v1/"
+        '400':
+          description: "Ungültiger Parameter (z.B. falsche Kombination von location/sensor mit id/type, unbekannter Sensor oder Aggregation)."
+        '401':
+          description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+        '404':
+          description: "Kein Gerät bzw. keine Messwerte zur Abfrage gefunden."
+
+/v2/geojson/history/devices/{id}:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Historische Messwerte im GeoJSON-Format (v2)"
+      description: |
+        Liefert historische Messwerte eines Geräts als GeoJSON-FeatureCollection.
+        Hinweis: Die historischen Daten befinden sich in aktiver Entwicklung; Schnittstellen und Struktur können sich kurzfristig ändern.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2)"
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+          description: "Optionaler Hinweis auf den Gerätetyp zur gezielten Auswahl"
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Startzeitpunkt (ISO 8601, relativer Offset wie -24h oder now())"
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Endzeitpunkt (ISO 8601, relativer Offset wie -1h oder now())"
+        - name: aggregation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [none, median, mean, min, max, latest]
+          description: "Optionale Aggregation der Zeitreihe"
+        - name: interval
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Zeit-Binning (z.B. 5m, 1h)"
+      responses:
+        '200':
+          description: "Historische Messwerte als GeoJSON-FeatureCollection"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoJSONResponse'
+        '400':
+          description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
+        '404':
+          description: "Keine Messwerte für die Kombination aus Gerät und Zeitraum gefunden"
+
+/v2/ngsi-ld/temporal/entities/{id}:
+    get:
+      tags: ["API v2 - Unter Entwicklung"]
+      summary: "Historische Messwerte im NGSI-LD-Temporalformat (v2)"
+      description: |
+        Liefert historische Messwerte eines Geräts im NGSI-LD Temporal Response Format.
+        Hinweis: Die historischen Daten befinden sich in aktiver Entwicklung; Struktur und Feldnamen können sich kurzfristig ändern.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2)"
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+          description: "Optionaler NGSI-LD-Gerätetyp"
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Startzeitpunkt (ISO 8601 oder relativer Offset)"
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Endzeitpunkt (ISO 8601 oder relativer Offset)"
+        - name: aggregation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [none, median, mean, min, max, latest]
+          description: "Optionale Aggregation der Messwerte"
+        - name: interval
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "Zeit-Binning (z.B. 5m, 1h)"
+      responses:
+        '200':
+          description: "NGSI-LD Temporal Response mit historischen Messwerten"
+          content:
+            application/ld+json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
+        '404':
+          description: "Keine Messwerte für die Kombination aus Gerät und Zeitraum gefunden"
