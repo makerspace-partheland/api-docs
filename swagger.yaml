@@ -372,9 +372,7 @@ paths:
       tags: ["API v2 - Ingest"]
       summary: "Messdaten per HTTP hochladen"
       description: |
-        Nimmt Rohpayloads externer Zulieferer an und puffert sie für die interne Telegraf-Verarbeitung.
-
-        Die API normalisiert die Payload nicht direkt. Telegraf holt die angenommenen Rohdaten intern ab, normalisiert sie und schreibt sie anschließend in InfluxDB und auf den internen MQTT-Ausgabekanal.
+        Nimmt Messdaten externer Zulieferer per HTTP entgegen.
 
         Für Uploads ist ein API-Key im Header `x-api-key` erforderlich. Einen Upload-Key erhalten Zulieferer über https://makerspace-partheland.de/austausch/.
       security:
@@ -386,7 +384,7 @@ paths:
             schema:
               type: object
               additionalProperties: true
-              description: "Rohpayload des Zulieferers. Die genaue Struktur hängt von der Quelle ab und wird intern über Telegraf verarbeitet."
+              description: "JSON-Payload des Zulieferers. Die genaue Struktur wird vor der Anbindung abgestimmt."
             examples:
               chirpstackUplink:
                 summary: "Beispiel eines dekodierten Uplinks"
@@ -399,7 +397,7 @@ paths:
                     humidity: 55
       responses:
         '202':
-          description: "Upload wurde angenommen und gepuffert"
+          description: "Upload wurde angenommen"
           content:
             application/json:
               schema:
@@ -422,7 +420,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseV2'
         '503':
-          description: "Der interne Ingest-Puffer ist voll"
+          description: "Upload kann aktuell nicht angenommen werden"
           content:
             application/json:
               schema:

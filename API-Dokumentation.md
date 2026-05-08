@@ -122,7 +122,7 @@ https://data.makerspace-partheland.de/
 
 ## Messdaten hochladen
 
-Externe Zulieferer können Messdaten per HTTP an die API v2 liefern. Die API nimmt die Rohpayload an und puffert sie. Die interne Verarbeitung läuft danach über Telegraf.
+Externe Zulieferer können Messdaten per HTTP an die API v2 liefern. Die genaue Payload-Struktur wird vor der Anbindung abgestimmt.
 
 **Endpunkt:**
 ```
