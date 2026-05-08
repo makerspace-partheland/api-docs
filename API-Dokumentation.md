@@ -6,6 +6,7 @@ Diese Dokumentation beschreibt, wie Sie die Sensordaten des Makerspace Parthelan
 - [Übersicht](#übersicht)
 - [Verfügbare Daten](#verfügbare-daten)
 - [Zugriffsmöglichkeiten](#zugriffsmöglichkeiten)
+- [Messdaten hochladen](#messdaten-hochladen)
 - [Anwendungsbeispiele](#anwendungsbeispiele)
 - [Anwendungsideen für Wasserstandsdaten](#anwendungsideen-für-wasserstandsdaten)
 - [Technische Details](#technische-details)
@@ -118,6 +119,39 @@ https://data.makerspace-partheland.de/
 - Spezifische SenseBox: `/v1/LoRaDevices/senseboxes?device=Beucha_Nr1`
 - Alle Wasserstände: `/v1/LoRaDevices/waterlevels`
 - Spezifischer Wasserstand: `/v1/LoRaDevices/waterlevels?device=LDDS75_Naunhof_1`
+
+## Messdaten hochladen
+
+Externe Zulieferer können Messdaten per HTTP an die API v2 liefern. Die API nimmt die Rohpayload an und puffert sie. Die interne Verarbeitung läuft danach über Telegraf.
+
+**Endpunkt:**
+```
+POST https://data.makerspace-partheland.de/v2/ingest
+```
+
+**Authentifizierung:**
+```
+x-api-key: DEIN_UPLOAD_KEY
+```
+
+Upload-Keys werden nicht öffentlich ausgegeben. Für einen Key bitte über https://makerspace-partheland.de/austausch/ Kontakt aufnehmen.
+
+Beispiel:
+```bash
+curl -X POST "https://data.makerspace-partheland.de/v2/ingest" \
+  -H "x-api-key: DEIN_UPLOAD_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "deviceInfo": {
+      "deviceName": "test-device-001"
+    },
+    "time": "2026-05-08T21:40:00Z",
+    "object": {
+      "temperature": 21.4,
+      "humidity": 55
+    }
+  }'
+```
 
 ## Anwendungsbeispiele
 

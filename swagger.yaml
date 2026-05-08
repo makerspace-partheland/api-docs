@@ -73,6 +73,8 @@ tags:
     description: "Produktive, stabile Endpunkte für den Live-Betrieb"
   - name: "API v2 - Unter Entwicklung"
     description: "Experimentelle Endpunkte - können sich ändern!"
+  - name: "API v2 - Ingest"
+    description: "Upload-Endpunkt für externe Messdatenzulieferer"
     
 components:
   securitySchemes:
@@ -332,6 +334,18 @@ components:
           format: date-time
           description: "Zeitpunkt der Fehlererzeugung (UTC)"
 
+    IngestAcceptedResponseV2:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "Interne Annahme-ID des Uploads"
+          example: "1778276243090-6a1884aa42553"
+        status:
+          type: string
+          description: "Annahmestatus"
+          example: "accepted"
+
     AttributesPublicV2:
       type: object
       description: "Öffentliche Geräteattribute mit Portal-Links und Anzeigeinformationen."
@@ -353,6 +367,67 @@ components:
       additionalProperties: true
 
 paths:
+  /v2/ingest:
+    post:
+      tags: ["API v2 - Ingest"]
+      summary: "Messdaten per HTTP hochladen"
+      description: |
+        Nimmt Rohpayloads externer Zulieferer an und puffert sie für die interne Telegraf-Verarbeitung.
+
+        Die API normalisiert die Payload nicht direkt. Telegraf holt die angenommenen Rohdaten intern ab, normalisiert sie und schreibt sie anschließend in InfluxDB und auf den internen MQTT-Ausgabekanal.
+
+        Für Uploads ist ein API-Key im Header `x-api-key` erforderlich. Einen Upload-Key erhalten Zulieferer über https://makerspace-partheland.de/austausch/.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: "Rohpayload des Zulieferers. Die genaue Struktur hängt von der Quelle ab und wird intern über Telegraf verarbeitet."
+            examples:
+              chirpstackUplink:
+                summary: "Beispiel eines dekodierten Uplinks"
+                value:
+                  deviceInfo:
+                    deviceName: "test-device-001"
+                  time: "2026-05-08T21:40:00Z"
+                  object:
+                    temperature: 21.4
+                    humidity: 55
+      responses:
+        '202':
+          description: "Upload wurde angenommen und gepuffert"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestAcceptedResponseV2'
+              examples:
+                accepted:
+                  value:
+                    id: "1778276243090-6a1884aa42553"
+                    status: "accepted"
+        '400':
+          description: "Ungültige oder fehlende JSON-Payload"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '401':
+          description: "API-Key fehlt oder ist ungültig"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '503':
+          description: "Der interne Ingest-Puffer ist voll"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+
   /v1/LoRaDevices:
     get:
       tags: ["API v1 - Produktiv"]

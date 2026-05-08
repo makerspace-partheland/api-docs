@@ -19,6 +19,7 @@ Einige Endpunkte erfordern eine Authentifizierung mittels API-Key. Der API-Key m
 - `/LoRaDevices` - Liste aller LoRa-Geräte (öffentlich zugänglich)
 - `/LoRaDevices/senseboxes` - Liste aller senseBox-Geräte (öffentlich zugänglich)
 - `/LoRaDevices/waterlevels` - Liste aller Wasserstand/Pegelstands-Geräte (öffentlich zugänglich)
+- `/v2/ingest` - HTTP-Upload für externe Messdatenzulieferer (erfordert API-Key)
 
 Jeder Gerätetyp bietet zusätzliche Endpunkte:
 
@@ -44,6 +45,26 @@ curl -X GET "https://data.makerspace-partheland.de/v1/LoRaDevices/senseboxes/det
 ```bash
 curl -X GET "https://data.makerspace-partheland.de/v1/LoRaDevices/waterlevels/details?name=LDDS75_Naunhof_1"
 ```
+
+### Messdaten hochladen
+
+```bash
+curl -X POST "https://data.makerspace-partheland.de/v2/ingest" \
+  -H "x-api-key: DEIN_UPLOAD_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "deviceInfo": {
+      "deviceName": "test-device-001"
+    },
+    "time": "2026-05-08T21:40:00Z",
+    "object": {
+      "temperature": 21.4,
+      "humidity": 55
+    }
+  }'
+```
+
+Upload-Keys werden nicht öffentlich ausgegeben. Für einen Key bitte über https://makerspace-partheland.de/austausch/ Kontakt aufnehmen.
 
 ## Dokumentation
 
