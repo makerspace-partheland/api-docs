@@ -74,4 +74,4 @@ Die vollständige API-Dokumentation ist als OpenAPI (Swagger) Spezifikation verf
 
 ## Unterstützung
 
-Bei Fragen oder Problemen melde Dich bitte via: https://makerspace-partheland.de/kontakt/
+Bei Fragen oder Problemen melde Dich bitte via: https://makerspace-partheland.de/austausch/
