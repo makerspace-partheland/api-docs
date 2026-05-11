@@ -123,6 +123,7 @@ https://data.makerspace-partheland.de/
 ## Messdaten hochladen
 
 Externe Zulieferer können Messdaten per HTTP an die API v2 liefern. Die genaue Payload-Struktur wird vor der Anbindung abgestimmt.
+Die maximale Payload-Größe beträgt 64 KiB.
 
 **Endpunkt:**
 ```
@@ -393,7 +394,7 @@ Dieses Python-Script:
 4. Gibt eine formatierte Zusammenfassung aus
 
 Sie können das Script erweitern durch:
-- Abrufen historischer Daten für Trendanalysen
+- Abrufen historischer Daten für Trendanalysen, sobald diese Endpunkte aktiv sind
 - Erstellen von Matplotlib/Seaborn Visualisierungen
 - Export der Daten in CSV/Excel für weitere Verarbeitung
 - Implementierung von statistischen Analysen

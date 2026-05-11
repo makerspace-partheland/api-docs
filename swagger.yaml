@@ -82,7 +82,7 @@ components:
       type: apiKey
       in: header
       name: x-api-key
-      description: API-Key für detaillierte Informationen
+      description: API-Key für geschützte API-Funktionen
       
   schemas:
     GeoJSONResponse:
@@ -373,6 +373,7 @@ paths:
       summary: "Messdaten per HTTP hochladen"
       description: |
         Nimmt Messdaten externer Zulieferer per HTTP entgegen.
+        Die maximale Payload-Größe beträgt 64 KiB.
 
         Für Uploads ist ein API-Key im Header `x-api-key` erforderlich. Einen Upload-Key erhalten Zulieferer über https://makerspace-partheland.de/austausch/.
       security:
@@ -384,7 +385,7 @@ paths:
             schema:
               type: object
               additionalProperties: true
-              description: "JSON-Payload des Zulieferers. Die genaue Struktur wird vor der Anbindung abgestimmt."
+              description: "JSON-Payload des Zulieferers. Die genaue Struktur wird vor der Anbindung abgestimmt. Maximal 64 KiB."
             examples:
               chirpstackUplink:
                 summary: "Beispiel eines dekodierten Uplinks"
@@ -415,6 +416,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponseV2'
         '401':
           description: "API-Key fehlt oder ist ungültig"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseV2'
+        '413':
+          description: "Payload ist größer als 64 KiB"
           content:
             application/json:
               schema:
@@ -1573,10 +1580,11 @@ paths:
   /v2/geojson/history/devices/{id}:
     get:
       tags: ["API v2 - Unter Entwicklung"]
-      summary: "Historische Messwerte im GeoJSON-Format (v2)"
+      summary: "Historische Messwerte im GeoJSON-Format (v2, noch nicht aktiv)"
+      deprecated: true
       description: |
-        Liefert historische Messwerte eines Geräts als GeoJSON-FeatureCollection.
-        Hinweis: Die historischen Daten befinden sich in aktiver Entwicklung; Schnittstellen und Struktur können sich kurzfristig ändern.
+        Dieser Endpunkt ist vorbereitet, aber derzeit nicht aktiv.
+        Historische Abfragen liefern aktuell keine produktiven Messdaten.
       parameters:
         - name: id
           in: path
@@ -1617,12 +1625,8 @@ paths:
             type: string
           description: "Zeit-Binning (z.B. 5m, 1h)"
       responses:
-        '200':
-          description: "Historische Messwerte als GeoJSON-FeatureCollection"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GeoJSONResponse'
+        '501':
+          description: "Historische Abfragen sind vorbereitet, aber derzeit nicht aktiv."
         '400':
           description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
         '404':
@@ -1631,10 +1635,11 @@ paths:
   /v2/ngsi-ld/temporal/entities/{id}:
     get:
       tags: ["API v2 - Unter Entwicklung"]
-      summary: "Historische Messwerte im NGSI-LD-Temporalformat (v2)"
+      summary: "Historische Messwerte im NGSI-LD-Temporalformat (v2, noch nicht aktiv)"
+      deprecated: true
       description: |
-        Liefert historische Messwerte eines Geräts im NGSI-LD Temporal Response Format.
-        Hinweis: Die historischen Daten befinden sich in aktiver Entwicklung; Struktur und Feldnamen können sich kurzfristig ändern.
+        Dieser Endpunkt ist vorbereitet, aber derzeit nicht aktiv.
+        Historische Abfragen liefern aktuell keine produktiven Messdaten.
       parameters:
         - name: id
           in: path
@@ -1675,13 +1680,8 @@ paths:
             type: string
           description: "Zeit-Binning (z.B. 5m, 1h)"
       responses:
-        '200':
-          description: "NGSI-LD Temporal Response mit historischen Messwerten"
-          content:
-            application/ld+json:
-              schema:
-                type: object
-                additionalProperties: true
+        '501':
+          description: "Historische Abfragen sind vorbereitet, aber derzeit nicht aktiv."
         '400':
           description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
         '404':
