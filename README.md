@@ -72,6 +72,10 @@ Die vollständige API-Dokumentation ist als OpenAPI (Swagger) Spezifikation verf
 
 - [OpenAPI Dokumentation](https://data.makerspace-partheland.de/swagger)
 
+## Wartung
+
+Swagger UI und GitHub-Actions-Abhängigkeiten werden automatisiert aktualisiert. Die daraus entstehenden PRs werden nach den normalen GitHub-Actions-Prüfungen übernommen; größere Versionswechsel werden getrennt geprüft.
+
 ## Unterstützung
 
 Bei Fragen oder Problemen melde Dich bitte via: https://makerspace-partheland.de/austausch/
