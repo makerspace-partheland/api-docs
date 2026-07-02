@@ -486,25 +486,13 @@ paths:
           schema:
             type: string
             enum: [temperature, noise, humidity, pressure, water_level, pm10, pm2_5, uv, illuminance]
-          description: |
-            Sensorname für Standort-Aggregation. Muss zusammen mit `location` angegeben werden.
-            Unterstützte Sensoren:
-            - temperature (CEL): Lufttemperatur
-            - noise (DB): Schallpegel
-            - humidity (P1): relative Luftfeuchte
-            - pressure (HPA): Luftdruck
-            - water_level (MMT): Wasserstand
-            - pm10 (GQ): Feinstaub PM10
-            - pm2_5 (GQ): Feinstaub PM2.5
-            - uv (UV): UV-Intensität
-            - illuminance (LX): Beleuchtungsstärke
+          description: "Sensorname für Standort-Aggregation. Muss zusammen mit `location` angegeben werden. Unterstützt: temperature (CEL), noise (DB), humidity (P1), pressure (HPA), water_level (MMT), pm10 (GQ), pm2_5 (GQ), uv (UV), illuminance (LX)."
         - name: aggregation
           in: query
           required: false
           schema:
             type: string
             enum: [median, mean, min, max, latest]
-            default: median
           description: "Aggregation für Standort-Aggregation (Standard: median)."
       responses:
         '200':
@@ -759,25 +747,13 @@ paths:
           schema:
             type: string
             enum: [temperature, noise, humidity, pressure, water_level, pm10, pm2_5, uv, illuminance]
-          description: |
-            Sensorname für Standort-Aggregation. Muss zusammen mit `location` angegeben werden.
-            Unterstützte Sensoren:
-            - temperature (CEL): Lufttemperatur
-            - noise (DB): Schallpegel
-            - humidity (P1): relative Luftfeuchte
-            - pressure (HPA): Luftdruck
-            - water_level (MMT): Wasserstand
-            - pm10 (GQ): Feinstaub PM10
-            - pm2_5 (GQ): Feinstaub PM2.5
-            - uv (UV): UV-Intensität
-            - illuminance (LX): Beleuchtungsstärke
+          description: "Sensorname für Standort-Aggregation. Muss zusammen mit `location` angegeben werden. Unterstützt: temperature (CEL), noise (DB), humidity (P1), pressure (HPA), water_level (MMT), pm10 (GQ), pm2_5 (GQ), uv (UV), illuminance (LX)."
         - name: aggregation
           in: query
           required: false
           schema:
             type: string
             enum: [median, mean, min, max, latest]
-            default: median
           description: "Aggregation für Standort-Aggregation (Standard: median)."
       responses:
         '200':

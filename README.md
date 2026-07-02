@@ -78,7 +78,7 @@ Upload-Keys werden nicht öffentlich ausgegeben. Für einen Key bitte über http
 
 Die vollständige API-Dokumentation ist als OpenAPI (Swagger) Spezifikation verfügbar:
 
-- [OpenAPI Dokumentation](https://data.makerspace-partheland.de/swagger)
+- [OpenAPI Dokumentation](https://api-docs.makerspace-partheland.de/)
 
 ## Wartung
 

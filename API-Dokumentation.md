@@ -188,4 +188,4 @@ sensoren/LDDS75_Naunhof_1
 
 ## OpenAPI
 
-Die OpenAPI-Spezifikation liegt in `swagger.yaml`. Die gerenderte Swagger-UI ist unter https://data.makerspace-partheland.de/swagger erreichbar.
+Die OpenAPI-Spezifikation liegt in `swagger.yaml`. Die gerenderte Swagger-UI ist unter https://api-docs.makerspace-partheland.de/ erreichbar.
