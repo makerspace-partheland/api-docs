@@ -98,6 +98,34 @@ Die Antwort ist eine GeoJSON-`FeatureCollection`. Messwerte stehen unter `proper
 }
 ```
 
+## Standort-Aggregation
+
+`/geojson/devices` und `/ngsi-ld/entities` können Messwerte je Standort aggregieren. Dafür müssen `location` und `sensor` gemeinsam angegeben werden. `aggregation` ist optional und nutzt ohne Angabe `median`.
+
+Erlaubte Aggregationen:
+
+```text
+median
+mean
+min
+max
+latest
+```
+
+GeoJSON:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices?location=naunhof&sensor=temperature&aggregation=median"
+```
+
+NGSI-LD:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities?location=naunhof&sensor=temperature&aggregation=median"
+```
+
+Eine Aggregation ohne `location` und `sensor` wird mit `400 MISSING_PARAMETERS` beantwortet. Eine unbekannte Aggregation wird mit `400 INVALID_AGGREGATION` beantwortet.
+
 ## Geräte als NGSI-LD
 
 Alle Geräte:
