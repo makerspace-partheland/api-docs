@@ -153,6 +153,7 @@ curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities/sensebox/msp
 ```
 
 NGSI-LD-Antworten enthalten `id`, `type`, Eigenschaften als `Property` oder `GeoProperty` und den NGSI-LD-Kontext.
+Erfolgreiche NGSI-LD-Antworten werden als `application/ld+json` ausgeliefert. Fehlerantworten verwenden `application/json`.
 
 ## Gateways
 

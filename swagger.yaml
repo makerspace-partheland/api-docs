@@ -759,7 +759,7 @@ paths:
         '200':
           description: "NGSI-LD Entities"
           content:
-            application/json:
+            application/ld+json:
               schema:
                 oneOf:
                   - type: array
@@ -920,7 +920,7 @@ paths:
         '200':
           description: "NGSI-LD-Entitäten des Gerätetyps"
           content:
-            application/json:
+            application/ld+json:
               schema:
                 type: array
                 items:
@@ -975,7 +975,7 @@ paths:
         '200':
           description: "NGSI-LD-Geräteentität"
           content:
-            application/json:
+            application/ld+json:
               schema:
                 type: object
         '400':
