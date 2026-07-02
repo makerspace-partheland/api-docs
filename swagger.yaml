@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: LoRa Geräte API
+  title: Sensordaten API
   description: |
-    API für den Zugriff auf LoRa-Geräte und deren Sensordaten
+    API für den Zugriff auf Geräte, Gateways und Sensordaten.
 
     # MQTT-Endpunkte
     Neben der REST-API stehen auch MQTT-Topics zur Verfügung.
@@ -12,7 +12,7 @@ info:
 
     ## Verfügbare Topics
 
-    ### senseBox:home Daten (entspricht REST /v1/LoRaDevices/senseboxes)
+    ### senseBox:home Daten 
     Topic: `senseBox:home/{device}`
     ```json
     {
@@ -35,7 +35,7 @@ info:
     }
     ```
 
-    ### Sensoren Daten (enthält REST /v1/LoRaDevices/waterlevels und weitere)
+    ### Sensoren Daten 
     Topic: `sensoren/{device}`
     ```json
     {
@@ -56,24 +56,27 @@ info:
     ```
 
     ## Topic-Struktur
-    - `senseBox:home/`: Enthält alle senseBox-Geräte (entspricht REST /v1/LoRaDevices/senseboxes)
-    - `sensoren/`: Enthält Wasserstand-Sensoren und weitere Sensortypen (enthält REST /v1/LoRaDevices/waterlevels)
+    - `senseBox:home/`: Enthält alle senseBox-Geräte 
+    - `sensoren/`: Enthält Wasserstand-Sensoren und weitere Sensortypen
 
   version: 1.0.4
+  license:
+    name: MIT
+    url: https://opensource.org/license/mit
   contact:
     name: Makerspace Partheland e.V.
     url: https://makerspace-partheland.de
 
 servers:
-  - url: https://data.makerspace-partheland.de/
+  - url: https://data.makerspace-partheland.de
     description: Produktions-Server
+
+security: []
     
 tags:
-  - name: "API v1 - Produktiv"
-    description: "Produktive, stabile Endpunkte für den Live-Betrieb"
-  - name: "API v2 - Unter Entwicklung"
-    description: "Experimentelle Endpunkte - können sich ändern!"
-  - name: "API v2 - Ingest"
+  - name: "Geräte"
+    description: "Geräte- und Gatewaydaten als GeoJSON und NGSI-LD"
+  - name: "Ingest"
     description: "Upload-Endpunkt für externe Messdatenzulieferer"
     
 components:
@@ -95,6 +98,7 @@ components:
           type: array
           items:
             type: object
+            additionalProperties: true
             properties:
               type:
                 type: string
@@ -115,7 +119,7 @@ components:
                 description: "Gerätespezifische Attribute; insbesondere enthalten `osm` (openSenseMap) und `mspl` (Makerspace Partheland) URLs zu den jeweiligen Portalen mit UI-basierten Messwertansichten."
                 additionalProperties: true
 
-    MeasurementValueV2:
+    MeasurementValue:
       type: object
       description: "Ein Messwert mit Einheit und Zeitstempel (ISO 8601)."
       properties:
@@ -130,71 +134,72 @@ components:
           format: date-time
           description: "Zeitpunkt der Messung (UTC)"
 
-    MeasurementsV2:
+    Measurements:
       type: object
       description: "Sammlung der aktuellen Sensormesswerte des Geräts. Schlüssel entsprechen den standardisierten Feldnamen."
       properties:
         temperature:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Lufttemperatur (Einheit CEL)"
         temperature_case:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Gehäusetemperatur (Einheit CEL)"
         humidity:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Relative Luftfeuchte (Einheit P1 = Prozent)"
         pressure:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Luftdruck (Einheit HPA)"
         illuminance:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Beleuchtungsstärke (Einheit LX)"
         uv:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "UV-Intensität (Einheit UV)"
         noise:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Schallpegel (Einheit DB)"
         noise_max:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Maximaler Schallpegel im Messintervall (Einheit DB)"
         pm10:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Feinstaub PM10 Massenkonzentration (Einheit GQ)"
         pm10_max:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Maximaler PM10-Wert im Messintervall (Einheit GQ)"
         pm2_5:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Feinstaub PM2.5 Massenkonzentration (Einheit GQ)"
         pm2_5_max:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Maximaler PM2.5-Wert im Messintervall (Einheit GQ)"
         water_level:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Wasserstand (Einheit MMT)"
         distance:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Abstand (Einheit MMT)"
         distance_to_ground:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Abstand zum Boden (Einheit MMT)"
         battery:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Batteriespannung (Einheit VLT)"
         water_temperature:
-          $ref: '#/components/schemas/MeasurementValueV2'
+          $ref: '#/components/schemas/MeasurementValue'
           description: "Wassertemperatur (Einheit CEL)"
 
-    DevicePropertiesV2:
+    DeviceProperties:
       type: object
+      additionalProperties: true
       properties:
         name:
           type: string
           description: "Name des Geräts (technischer Name; nicht 'displayname')"
         type:
           type: string
-          description: "Typ des Geräts (SenseBoxDevice, WaterLevelDevice, TemperatureDevice)"
+          description: "Typ des Geräts (SenseBoxDevice, WaterLevelDevice, TemperatureDevice, MoistureDevice)"
         status:
           type: string
           enum: [online, offline, pending, Online, Offline, Pending]
@@ -207,12 +212,13 @@ components:
           type: string
           description: "Letzter Kontakt (deutsche Zeit)"
         attributes:
-          $ref: '#/components/schemas/AttributesPublicV2'
+          $ref: '#/components/schemas/AttributesPublic'
         measurements:
-          $ref: '#/components/schemas/MeasurementsV2'
+          $ref: '#/components/schemas/Measurements'
 
-    DeviceFeatureV2:
+    DeviceFeature:
       type: object
+      additionalProperties: true
       properties:
         type:
           type: string
@@ -233,9 +239,9 @@ components:
               example: [12.000000, 51.000000]
           description: "WGS84-Geometrie des Geräts; Koordinaten in der Form [Längengrad, Breitengrad]."
         properties:
-          $ref: '#/components/schemas/DevicePropertiesV2'
+          $ref: '#/components/schemas/DeviceProperties'
 
-    DeviceGeoJSONResponseV2:
+    DeviceGeoJSONResponse:
       type: object
       properties:
         type:
@@ -244,10 +250,10 @@ components:
         features:
           type: array
           items:
-            $ref: '#/components/schemas/DeviceFeatureV2'
+            $ref: '#/components/schemas/DeviceFeature'
 
     # Standort-Aggregation (location + sensor) als eigenes Feature-Schema
-    AggregatedLocationPropertiesV2:
+    AggregatedLocationProperties:
       type: object
       properties:
         location:
@@ -280,7 +286,7 @@ components:
           format: date-time
           description: "Erzeugungszeitpunkt der Aggregation (UTC)"
 
-    AggregatedLocationFeatureV2:
+    AggregatedLocationFeature:
       type: object
       properties:
         type:
@@ -298,9 +304,9 @@ components:
                 type: number
               example: [12.586797, 51.283337]
         properties:
-          $ref: '#/components/schemas/AggregatedLocationPropertiesV2'
+          $ref: '#/components/schemas/AggregatedLocationProperties'
 
-    DeviceOrLocationGeoJSONResponseV2:
+    DeviceOrLocationGeoJSONResponse:
       type: object
       properties:
         type:
@@ -309,11 +315,11 @@ components:
         features:
           type: array
           items:
-            oneOf:
-              - $ref: '#/components/schemas/DeviceFeatureV2'
-              - $ref: '#/components/schemas/AggregatedLocationFeatureV2'
+            anyOf:
+              - $ref: '#/components/schemas/DeviceFeature'
+              - $ref: '#/components/schemas/AggregatedLocationFeature'
 
-    ErrorResponseV2:
+    ErrorResponse:
       type: object
       properties:
         error:
@@ -334,7 +340,7 @@ components:
           format: date-time
           description: "Zeitpunkt der Fehlererzeugung (UTC)"
 
-    IngestAcceptedResponseV2:
+    IngestAcceptedResponse:
       type: object
       properties:
         id:
@@ -346,7 +352,7 @@ components:
           description: "Annahmestatus"
           example: "accepted"
 
-    AttributesPublicV2:
+    AttributesPublic:
       type: object
       description: "Öffentliche Geräteattribute mit Portal-Links und Anzeigeinformationen."
       properties:
@@ -367,9 +373,10 @@ components:
       additionalProperties: true
 
 paths:
-  /v2/ingest:
+  /ingest:
     post:
-      tags: ["API v2 - Ingest"]
+      operationId: uploadMeasurements
+      tags: ["Ingest"]
       summary: "Messdaten per HTTP hochladen"
       description: |
         Nimmt Messdaten externer Zulieferer per HTTP entgegen.
@@ -402,7 +409,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IngestAcceptedResponseV2'
+                $ref: '#/components/schemas/IngestAcceptedResponse'
               examples:
                 accepted:
                   value:
@@ -413,752 +420,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: "API-Key fehlt oder ist ungültig"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '413':
           description: "Payload ist größer als 64 KiB"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '503':
           description: "Upload kann aktuell nicht angenommen werden"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /v1/LoRaDevices:
+  /geojson/devices:
     get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte alle LoRa-Geräte"
-      responses:
-        '200':
-          description: "Eine Liste aller LoRa-Geräte"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            deviceType:
-                              type: string
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
-                            active:
-                              type: boolean
-                            name:
-                              type: string
-                            displayName:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            measurement:
-                              type: string
-                            openSenseMap:
-                              type: string
-                            url:
-                              type: string
-                            fields:
-                              type: object
-                              description: "Ein Objekt, das die verschiedenen Sensormesswerte des Geräts enthält. Die Felder variieren je nach Gerätetyp."
-                              properties:
-                                Temperatur:
-                                  type: number
-                                Luftfeuchte:
-                                  type: number
-                                water_level:
-                                  type: number
-              examples:
-                loRaDeviceExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          deviceType: "senseBox"
-                          binaryStatus: 1
-                          active: true
-                          name: "sensebox-beucha-1"
-                          displayName: "sensebox-beucha-1"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:20:09"
-                          measurement: "Beucha_Nr1"
-                          openSenseMap: "https://opensensemap.org/explore/6214b789ef6200001d2971bc"
-                          url: "https://sensoren.makerspace-partheland.de/d/XrweFEQnk/station-beucha-nr-1"
-                          fields:
-                            Temperatur: 8
-                            Luftfeuchte: 86
-                      - type: "Feature"
-                        properties:
-                          deviceType: "waterLevelSensor"
-                          binaryStatus: 1
-                          active: true
-                          name: "LDDS75 Naunhof 2"
-                          displayName: "LDDS75 Naunhof 2"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:05:17"
-                          measurement: "LDDS75_Naunhof_2"
-                          openSenseMap: ""
-                          url: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
-                          fields:
-                            water_level: 17
-                            bat: 3.328
-                            water_temp: 15.2
-
-  /v1/LoRaDevices/senseboxes:
-    get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte alle senseBox-Geräte mit deren Sensordaten"
-      parameters:
-        - name: device
-          in: query
-          required: false
-          schema:
-            type: string
-          example: Beucha_Nr1
-          description: "Filter für ein spezifisches senseBox-Gerät mit dessen Sensordaten"
-      responses:
-        '200':
-          description: "Eine Liste aller senseBox-Geräte"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            deviceType:
-                              type: string
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
-                            active:
-                              type: boolean
-                            name:
-                              type: string
-                            displayName:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            measurement:
-                              type: string
-                            openSenseMap:
-                              type: string
-                            url:
-                              type: string
-                            fields:
-                              type: object
-                              properties:
-                                Beleuchtungsstaerke:
-                                  type: number
-                                GehaeuseTemp:
-                                  type: number
-                                Lautstaerke:
-                                  type: number
-                                Lautstaerke_Max:
-                                  type: number
-                                Luftdruck:
-                                  type: number
-                                Luftfeuchte:
-                                  type: number
-                                PM10:
-                                  type: number
-                                PM10_Max:
-                                  type: number
-                                PM2.5:
-                                  type: number
-                                PM25_Max:
-                                  type: number
-                                Temperatur:
-                                  type: number
-                                "UV-Intensitaet":
-                                  type: number
-              examples:
-                senseBoxExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          deviceType: "senseBox"
-                          binaryStatus: 1
-                          active: true
-                          name: "sensebox-beucha-1"
-                          displayName: "sensebox-beucha-1"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:20:09"
-                          measurement: "Beucha_Nr1"
-                          openSenseMap: "https://opensensemap.org/explore/6214b789ef6200001d2971bc"
-                          url: "https://sensoren.makerspace-partheland.de/d/XrweFEQnk/station-beucha-nr-1"
-                          fields:
-                            Beleuchtungsstaerke: 0
-                            GehaeuseTemp: 9.4
-                            Lautstaerke: 48.1
-                            Lautstaerke_Max: 49.4
-                            Luftdruck: 995.3
-                            Luftfeuchte: 86
-                            PM10: 39.7
-                            PM10_Max: 41.7
-                            PM2.5: 16.8
-                            PM25_Max: 17.9
-                            Temperatur: 8
-                            "UV-Intensitaet": 0
-
-  /v1/LoRaDevices/senseboxes/health:
-    get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte den Status der senseBox-Geräte"
-      parameters:
-        - name: device
-          in: query
-          required: false
-          schema:
-            type: string
-          example: Beucha_Nr1
-      responses:
-        '200':
-          description: "Aktueller Status der senseBox-Geräte"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            measurement:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-              examples:
-                senseBoxHealthExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          name: "senseBox1"
-                          measurement: "sensebox_1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
-
-  /v1/LoRaDevices/senseboxes/details:
-    get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte detaillierte Sensordaten einer bestimmten senseBox:home"
-      description: "Dieser Endpunkt liefert detaillierte Informationen und aktuelle Sensordaten einer spezifischen senseBox:home. Die Daten beinhalten alle verfügbaren Sensorwerte wie Temperatur, Luftfeuchtigkeit, Luftdruck, Feinstaubwerte und mehr."
-      parameters:
-        - name: device
-          in: query
-          required: true
-          schema:
-            type: string
-          example: Beucha_Nr1
-          description: "Name der senseBox:home, deren Details abgefragt werden sollen"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: "Detaillierte Informationen einer senseBox:home"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
-                            active:
-                              type: boolean
-                            name:
-                              type: string
-                            displayName:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            measurement:
-                              type: string
-                            openSenseMap:
-                              type: string
-                            url:
-                              type: string
-                            fields:
-                              type: object
-                              properties:
-                                Beleuchtungsstaerke:
-                                  type: number
-                                GehaeuseTemp:
-                                  type: number
-                                Lautstaerke:
-                                  type: number
-                                Lautstaerke_Max:
-                                  type: number
-                                Luftdruck:
-                                  type: number
-                                Luftfeuchte:
-                                  type: number
-                                PM10:
-                                  type: number
-                                PM10_Max:
-                                  type: number
-                                PM2.5:
-                                  type: number
-                                PM25_Max:
-                                  type: number
-                                Temperatur:
-                                  type: number
-                                "UV-Intensitaet":
-                                  type: number
-                        geometry:
-                          type: object
-                          properties:
-                            type:
-                              type: string
-                            coordinates:
-                              type: array
-                              items:
-                                type: number
-              examples:
-                senseBoxDetailsExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          binaryStatus: 1
-                          active: true
-                          name: "sensebox-beucha-1"
-                          displayName: "sensebox-beucha-1"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:20:09"
-                          measurement: "Beucha_Nr1"
-                          openSenseMap: "https://opensensemap.org/explore/6214b789ef6200001d2971bc"
-                          url: "https://sensoren.makerspace-partheland.de/d/XrweFEQnk/station-beucha-nr-1"
-                          fields:
-                            Beleuchtungsstaerke: 0
-                            GehaeuseTemp: 9.2
-                            Lautstaerke: 48
-                            Lautstaerke_Max: 51.4
-                            Luftdruck: 995.2
-                            Luftfeuchte: 85.3
-                            PM10: 34.3
-                            PM10_Max: 36.2
-                            PM2.5: 16
-                            PM25_Max: 16.3
-                            Temperatur: 7.9
-                            "UV-Intensitaet": 0
-                        geometry:
-                          type: "Point"
-                          coordinates: [12.000000, 51.000000]
-
-  /v1/LoRaDevices/waterlevels:
-    get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte alle Wasserstand-Geräte"
-      parameters:
-        - name: device
-          in: query
-          required: false
-          schema:
-            type: string
-          example: LDDS75_Naunhof_2
-          description: "Filter für ein spezifisches Wasserstand-Gerät mit dessen Sensordaten"
-      responses:
-        '200':
-          description: "Eine Liste aller Wasserstand-Geräte mit deren Sensordaten"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            deviceType:
-                              type: string
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
-                            active:
-                              type: boolean
-                            name:
-                              type: string
-                            displayName:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            measurement:
-                              type: string
-                            openSenseMap:
-                              type: string
-                            url:
-                              type: string
-                            fields:
-                              type: object
-                              properties:
-                                bat:
-                                  type: number
-                                  description: "Batteriestand in Volt"
-                                distance:
-                                  type: number
-                                  description: "Gemessene Distanz in mm"
-                                distance_to_ground:
-                                  type: number
-                                  description: "Distanz zum Boden in mm"
-                                meldestufe:
-                                  type: number
-                                  description: "Aktuelle Hochwasser-Meldestufe"
-                                water:
-                                  type: string
-                                  description: "Name des Gewässers"
-                                water_level:
-                                  type: number
-                                  description: "Aktueller Wasserstand in cm"
-                                water_temp:
-                                  type: number
-                                  description: "Die Wassertemperatur in Grad Celsius (falls vom Sensor unterstützt)."
-                                water_depth:
-                                  type: number
-                                  description: "Gemessene Wassertiefe in cm (falls vom Sensor unterstützt)."
-                                battery_voltage:
-                                  type: number
-                                  description: "Spannung der externen Stromversorgung in Volt (falls vom Sensor unterstützt)."
-                                current_4_20ma:
-                                  type: number
-                                  description: "Messwert des 4-20mA Analogeingangs in Milliampere (falls vom Sensor unterstützt)."
-                                voltage_input:
-                                  type: number
-                                  description: "Messwert des analogen Spannungseingangs in Volt (falls vom Sensor unterstützt)."
-              examples:
-                waterLevelExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          deviceType: "waterLevelSensor"
-                          active: true
-                          name: "LDDS75 Naunhof 2"
-                          displayName: "LDDS75 Naunhof 2"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:05:17"
-                          measurement: "LDDS75_Naunhof_2"
-                          openSenseMap: ""
-                          url: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
-                          fields:
-                            bat: 3.328
-                            distance: 1583
-                            distance_to_ground: 1600
-                            meldestufe: 0
-                            water: "Parthe"
-                            water_level: 17
-                            water_temp: 15.2
-                            water_depth: 52.78
-                            battery_voltage: 3.335
-                            current_4_20ma: 6.815
-                            voltage_input: 0
-
-  /v1/LoRaDevices/waterlevels/health:
-    get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte den Status der Wasserstand-Geräte"
-      parameters:
-        - name: device
-          in: query
-          required: false
-          schema:
-            type: string
-          example: LDDS75_Naunhof_1
-      responses:
-        '200':
-          description: "Aktueller Status der Wasserstand-Geräte"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            name:
-                              type: string
-                            measurement:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            water_level:
-                              type: number
-                              description: "Aktueller Wasserstand in cm"
-                            water_temp:
-                              type: number
-                              description: "Die Wassertemperatur in Grad Celsius (falls vom Sensor unterstützt)."
-                            water_depth:
-                              type: number
-                              description: "Gemessene Wassertiefe in cm (falls vom Sensor unterstützt)."
-                            battery_voltage:
-                              type: number
-                              description: "Spannung der externen Stromversorgung in Volt (falls vom Sensor unterstützt)."
-                            current_4_20ma:
-                              type: number
-                              description: "Messwert des 4-20mA Analogeingangs in Milliampere (falls vom Sensor unterstützt)."
-                            voltage_input:
-                              type: number
-                              description: "Messwert des analogen Spannungseingangs in Volt (falls vom Sensor unterstützt)."
-              examples:
-                waterLevelHealthExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          name: "WaterLevel1"
-                          measurement: "waterLevel_1"
-                          status: "online"
-                          lastSeen: "2023-10-01T12:00:00Z"
-                          water_level: 17
-                          water_temp: 15.2
-                          water_depth: 52.78
-                          battery_voltage: 3.335
-                          current_4_20ma: 6.815
-                          voltage_input: 0
-                        geometry:
-                          type: "Point"
-                          coordinates: [12.000000, 51.000000]
-
-  /v1/LoRaDevices/waterlevels/details:
-    get:
-      tags: ["API v1 - Produktiv"]
-      summary: "Erhalte detaillierte Sensordaten eines bestimmten Wasserstand-Geräts"
-      description: "Dieser Endpunkt liefert detaillierte Informationen und aktuelle Sensordaten eines spezifischen Wasserstand-Sensors. Die Daten beinhalten Informationen wie Batteriestand, Distanzmessungen, Wasserstand, Gewässername und Meldestufe."
-      parameters:
-        - name: device
-          in: query
-          required: true
-          schema:
-            type: string
-          example: LDDS75_Naunhof_2
-          description: "Name des Wasserstand-Geräts, dessen Details abgefragt werden sollen"
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: "Detaillierte Informationen eines Wasserstand-Geräts"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                  features:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        type:
-                          type: string
-                        properties:
-                          type: object
-                          properties:
-                            binaryStatus:
-                              type: integer
-                              enum: [0, 1]
-                            id:
-                              type: string
-                            active:
-                              type: boolean
-                            name:
-                              type: string
-                            displayName:
-                              type: string
-                            status:
-                              type: string
-                            lastSeen:
-                              type: string
-                            measurement:
-                              type: string
-                            openSenseMap:
-                              type: string
-                            url:
-                              type: string
-                            fields:
-                              type: object
-                              properties:
-                                bat:
-                                  type: number
-                                  description: "Batteriestand in Volt"
-                                distance:
-                                  type: number
-                                  description: "Gemessene Distanz in mm"
-                                distance_to_ground:
-                                  type: number
-                                  description: "Distanz zum Boden in mm"
-                                latitude:
-                                  type: number
-                                  description: "Breitengrad des Sensors"
-                                longitude:
-                                  type: number
-                                  description: "Längengrad des Sensors"
-                                meldestufe:
-                                  type: integer
-                                  description: "Aktuelle Hochwasser-Meldestufe"
-                                us_sensor:
-                                  type: integer
-                                  description: "Status des Ultraschall-Sensors"
-                                water:
-                                  type: string
-                                  description: "Name des Gewässers"
-                                water_level:
-                                  type: number
-                                  description: "Aktueller Wasserstand in cm"
-                                water_temp:
-                                  type: number
-                                  description: "Die Wassertemperatur in Grad Celsius (falls vom Sensor unterstützt)."
-                                water_depth:
-                                  type: number
-                                  description: "Gemessene Wassertiefe in cm (falls vom Sensor unterstützt)."
-                                battery_voltage:
-                                  type: number
-                                  description: "Spannung der externen Stromversorgung in Volt (falls vom Sensor unterstützt)."
-                                current_4_20ma:
-                                  type: number
-                                  description: "Messwert des 4-20mA Analogeingangs in Milliampere (falls vom Sensor unterstützt)."
-                                voltage_input:
-                                  type: number
-                                  description: "Messwert des analogen Spannungseingangs in Volt (falls vom Sensor unterstützt)."
-                        geometry:
-                          type: object
-                          properties:
-                            type:
-                              type: string
-                            coordinates:
-                              type: array
-                              items:
-                                type: number
-              examples:
-                waterLevelDetailsExample:
-                  value:
-                    type: "FeatureCollection"
-                    features:
-                      - type: "Feature"
-                        properties:
-                          binaryStatus: 1
-                          id: "eui-a84041e01188c969"
-                          active: true
-                          name: "LDDS75 Naunhof 2"
-                          displayName: "LDDS75 Naunhof 2"
-                          status: "Online"
-                          lastSeen: "28.3.2025, 21:05:17"
-                          measurement: "LDDS75_Naunhof_2"
-                          openSenseMap: ""
-                          url: "https://sensoren.makerspace-partheland.de/d/ae459r4tpq03ke/pegelstande"
-                          fields:
-                            bat: 3.328
-                            distance: 1583
-                            distance_to_ground: 1600
-                            latitude: 51.000000
-                            longitude: 12.000000
-                            meldestufe: 0
-                            us_sensor: 1
-                            water: "Parthe"
-                            water_level: 17
-                            water_temp: 15.2
-                            water_depth: 52.78
-                            battery_voltage: 3.335
-                            current_4_20ma: 6.815
-                            voltage_input: 0
-                        geometry:
-                          type: "Point"
-                          coordinates: [12.000000, 51.000000]
-
-  /v2/geojson/devices:
-    get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte alle Geräte im GeoJSON-Format (v2)"
+      operationId: listDevicesGeoJSON
+      tags: ["Geräte"]
+      summary: "Erhalte alle Geräte im GeoJSON-Format"
       description: |
-        Neue API-Version mit verbesserter GeoJSON-Struktur und erweiterten Metadaten.
-        Live-Daten befinden sich kurz vor dem Abschluss der Entwicklung; die Datenmodelle gelten als stabil, lediglich Detailanpassungen sind noch möglich.
+        Liefert Geräte und Sensordaten als GeoJSON-FeatureCollection.
         Die Attribute `osm` (openSenseMap) und `mspl` (Makerspace Partheland) liefern Links zu Visualisierungsoberflächen, auf denen Messwerte im jeweiligen Portal eingesehen werden können.
       parameters:
         - name: x-api-key
@@ -1172,7 +460,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+            enum: [sensebox, waterlevel, temperature, moisture]
           description: "Filter für Gerätetyp (Dropdown)"
         - name: device
           in: query
@@ -1224,7 +512,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeviceOrLocationGeoJSONResponseV2'
+                $ref: '#/components/schemas/DeviceOrLocationGeoJSONResponse'
               examples:
                 senseBox:
                   summary: "SenseBox-Gerät mit Detaildaten"
@@ -1252,10 +540,10 @@ paths:
                               value: 13.8
                               unit: "CEL"
                               timestamp: "2025-10-11T19:34:22.000Z"
-                          pm2_5:
-                            value: 4.2
-                            unit: "GQ"
-                            timestamp: "2025-10-11T19:34:22.000Z"
+                            pm2_5:
+                              value: 4.2
+                              unit: "GQ"
+                              timestamp: "2025-10-11T19:34:22.000Z"
                 waterLevel:
                   summary: "Wasserstandssensor (WaterLevelDevice)"
                   value:
@@ -1307,29 +595,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: "Kein Gerät bzw. keine Messwerte zur Abfrage gefunden."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /v2/geojson/devices/{type}:
+  /geojson/devices/{type}:
     get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte Geräte eines spezifischen Typs im GeoJSON-Format (v2)"
+      operationId: listDevicesByTypeGeoJSON
+      tags: ["Geräte"]
+      summary: "Erhalte Geräte eines spezifischen Typs im GeoJSON-Format"
       description: |
-        Filtert Geräte nach Typ (SenseBoxDevice, WaterLevelDevice oder TemperatureDevice).
-        Live-Daten befinden sich kurz vor dem Abschluss der Entwicklung; größere Änderungen an den GeoJSON-Strukturen sind derzeit nicht geplant.
+        Filtert Geräte nach Typ (`sensebox`, `waterlevel`, `temperature` oder `moisture`).
         Die Attribute `osm` (openSenseMap) und `mspl` (Makerspace Partheland) verlinken direkt auf die jeweiligen Portale zur Visualisierung derselben Messwerte.
-        Standort-Aggregationen (`location`, `sensor`, `aggregation`) sind auf der Typ-Route derzeit nicht verfügbar und für eine zukünftige Version geplant; nutzen Sie dafür /v2/geojson/devices.
+        Standort-Aggregationen (`location`, `sensor`, `aggregation`) werden über `/geojson/devices` abgefragt.
       parameters:
         - name: x-api-key
           in: header
@@ -1342,7 +630,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
+            enum: [sensebox, waterlevel, temperature, moisture]
           description: "Gerätetyp (Dropdown)"
         - name: device
           in: query
@@ -1356,33 +644,86 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeviceGeoJSONResponseV2'
+                $ref: '#/components/schemas/DeviceGeoJSONResponse'
         '401':
           description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: "Kein Gerät für die Kombination aus Typ und Filter gefunden."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '400':
           description: "Ungültiger Gerätetyp"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /v2/ngsi-ld/entities:
+  /geojson/devices/{type}/{id}:
     get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte Geräte im NGSI-LD Format (v2)"
+      operationId: getDeviceGeoJSON
+      tags: ["Geräte"]
+      summary: "Erhalte ein Gerät im GeoJSON-Format"
       description: |
-        Neue API-Version mit NGSI-LD Kontext für Smart City Anwendungen.
-        Live-Daten befinden sich kurz vor dem Abschluss der Entwicklung; größere Änderungen an den vorhandenen Entitäten sind nur noch in Ausnahmefällen zu erwarten.
+        Liefert ein einzelnes Gerät als GeoJSON-FeatureCollection. `type` ist einer der Werte `sensebox`, `waterlevel`, `temperature` oder `moisture`.
+      parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z.B. interne Metadaten); ohne Key werden nur freigegebene Attribute ausgegeben."
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [sensebox, waterlevel, temperature, moisture]
+          description: "Gerätetyp"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Geräte-ID oder Measurement-Name"
+      responses:
+        '200':
+          description: "GeoJSON-FeatureCollection mit einem Gerät"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceGeoJSONResponse'
+        '400':
+          description: "Ungültiger Gerätetyp"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Kein Gerät für die Kombination aus Typ und ID gefunden."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ngsi-ld/entities:
+    get:
+      operationId: listDevicesNGSILD
+      tags: ["Geräte"]
+      summary: "Erhalte Geräte im NGSI-LD Format"
+      description: |
+        Liefert Geräte und Sensordaten als NGSI-LD-Entitäten.
         Die Attribute `osm` (openSenseMap) und `mspl` (Makerspace Partheland) innerhalb der bereitgestellten Gerätedaten verweisen auf die jeweiligen UI-Portale mit identischen Messwerten.
         Standort-Aggregationen (`location`, `sensor`, `aggregation`) liefern NGSI-LD Location-Entitäten mit aggregierten Messwerten je Standort.
       parameters:
@@ -1397,7 +738,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [WaterLevelDevice, SenseBoxDevice, TemperatureDevice]
+            enum: [sensebox, waterlevel, temperature, moisture]
           description: "NGSI-LD Entity-Typ (Dropdown)"
         - name: id
           in: query
@@ -1444,24 +785,25 @@ paths:
           content:
             application/ld+json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      description: "NGSI-LD Entity ID"
-                    type:
-                      type: string
-                      description: "NGSI-LD Entity Type"
-                    "@context":
-                      type: array
-                      items:
-                        type: string
-                      description: "NGSI-LD Context URLs"
-                    properties:
+                oneOf:
+                  - type: array
+                    items:
                       type: object
-                      description: "Entity Properties"
+                      additionalProperties: true
+                      properties:
+                        id:
+                          type: string
+                          description: "NGSI-LD Entity ID"
+                        type:
+                          type: string
+                          description: "NGSI-LD Entity Type"
+                        "@context":
+                          type: array
+                          items:
+                            type: string
+                          description: "NGSI-LD Context URLs"
+                  - type: object
+                    additionalProperties: true
               examples:
                 ngsiLdExample:
                   value:
@@ -1577,120 +919,113 @@ paths:
         '404':
           description: "Kein Gerät bzw. keine Messwerte zur Abfrage gefunden."
 
-  /v2/geojson/history/devices/{id}:
+  /ngsi-ld/entities/{type}:
     get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Historische Messwerte im GeoJSON-Format (v2, noch nicht aktiv)"
-      deprecated: true
+      operationId: listDevicesByTypeNGSILD
+      tags: ["Geräte"]
+      summary: "Erhalte Geräte eines spezifischen Typs im NGSI-LD-Format"
       description: |
-        Dieser Endpunkt ist vorbereitet, aber derzeit nicht aktiv.
-        Historische Abfragen liefern aktuell keine produktiven Messdaten.
+        Filtert NGSI-LD-Entitäten nach Gerätetyp. `type` ist einer der Werte `sensebox`, `waterlevel`, `temperature` oder `moisture`.
       parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z.B. interne Metadaten); ohne Key werden nur freigegebene Attribute ausgegeben."
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [sensebox, waterlevel, temperature, moisture]
+          description: "Gerätetyp"
+      responses:
+        '200':
+          description: "NGSI-LD-Entitäten des Gerätetyps"
+          content:
+            application/ld+json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: "Ungültiger Gerätetyp"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Kein Gerät für den Typ gefunden."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ngsi-ld/entities/{type}/{id}:
+    get:
+      operationId: getDeviceNGSILD
+      tags: ["Geräte"]
+      summary: "Erhalte ein Gerät im NGSI-LD-Format"
+      description: |
+        Liefert eine einzelne NGSI-LD-Geräteentität. `type` ist einer der Werte `sensebox`, `waterlevel`, `temperature` oder `moisture`.
+      parameters:
+        - name: x-api-key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "API-Key für detaillierte Attribute (z.B. interne Metadaten); ohne Key werden nur freigegebene Attribute ausgegeben."
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [sensebox, waterlevel, temperature, moisture]
+          description: "Gerätetyp"
         - name: id
           in: path
           required: true
           schema:
             type: string
-          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2)"
-        - name: type
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
-          description: "Optionaler Hinweis auf den Gerätetyp zur gezielten Auswahl"
-        - name: start
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Startzeitpunkt (ISO 8601, relativer Offset wie -24h oder now())"
-        - name: end
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Endzeitpunkt (ISO 8601, relativer Offset wie -1h oder now())"
-        - name: aggregation
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [none, median, mean, min, max, latest]
-          description: "Optionale Aggregation der Zeitreihe"
-        - name: interval
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Zeit-Binning (z.B. 5m, 1h)"
+          description: "Geräte-ID oder Measurement-Name"
       responses:
-        '501':
-          description: "Historische Abfragen sind vorbereitet, aber derzeit nicht aktiv."
+        '200':
+          description: "NGSI-LD-Geräteentität"
+          content:
+            application/ld+json:
+              schema:
+                type: object
         '400':
-          description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
+          description: "Ungültiger Gerätetyp"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "API-Key erforderlich oder ungültig für angeforderte Detailinformationen."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: "Keine Messwerte für die Kombination aus Gerät und Zeitraum gefunden"
+          description: "Kein Gerät für die Kombination aus Typ und ID gefunden."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /v2/ngsi-ld/temporal/entities/{id}:
+  /geojson/gateways:
     get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Historische Messwerte im NGSI-LD-Temporalformat (v2, noch nicht aktiv)"
-      deprecated: true
-      description: |
-        Dieser Endpunkt ist vorbereitet, aber derzeit nicht aktiv.
-        Historische Abfragen liefern aktuell keine produktiven Messdaten.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: "Geräte-ID oder Measurement-Name (z.B. Beucha_Nr1, LDDS75_Naunhof_2)"
-        - name: type
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [SenseBoxDevice, WaterLevelDevice, TemperatureDevice]
-          description: "Optionaler NGSI-LD-Gerätetyp"
-        - name: start
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Startzeitpunkt (ISO 8601 oder relativer Offset)"
-        - name: end
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Endzeitpunkt (ISO 8601 oder relativer Offset)"
-        - name: aggregation
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [none, median, mean, min, max, latest]
-          description: "Optionale Aggregation der Messwerte"
-        - name: interval
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Zeit-Binning (z.B. 5m, 1h)"
-      responses:
-        '501':
-          description: "Historische Abfragen sind vorbereitet, aber derzeit nicht aktiv."
-        '400':
-          description: "Ungültiger Parameter (z.B. fehlende ID oder ungültiger Zeitraum)"
-        '404':
-          description: "Keine Messwerte für die Kombination aus Gerät und Zeitraum gefunden"
-
-  /v2/geojson/gateways:
-    get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte Gateways im GeoJSON-Format (v2)"
+      operationId: listGatewaysGeoJSON
+      tags: ["Geräte"]
+      summary: "Erhalte Gateways im GeoJSON-Format"
       description: |
         Liefert alle bekannten Gateways als GeoJSON-FeatureCollection. Status basiert auf den letzten Status-/Uplink-Zeitpunkten.
       parameters:
@@ -1735,24 +1070,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: "API-Key erforderlich oder ungültig"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: "Kein Gateway gefunden"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /v2/geojson/gateways/{id}:
+  /geojson/gateways/{id}:
     get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte ein Gateway im GeoJSON-Format (v2)"
+      operationId: getGatewayGeoJSON
+      tags: ["Geräte"]
+      summary: "Erhalte ein Gateway im GeoJSON-Format"
       parameters:
         - name: id
           in: path
@@ -1772,97 +1108,4 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
-
-  /v2/ngsi-ld/entities/gateways:
-    get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte Gateways im NGSI-LD-Format (v2)"
-      parameters:
-        - name: x-api-key
-          in: header
-          required: false
-          schema:
-            type: string
-          description: "API-Key für detaillierte Attribute (z. B. interne Metadaten)."
-        - name: id
-          in: query
-          required: false
-          schema:
-            type: string
-          description: "Gateway-ID (optional)"
-      responses:
-        '200':
-          description: "NGSI-LD Gateway Entities"
-          content:
-            application/ld+json:
-              schema:
-                type: array
-                items:
-                  type: object
-              examples:
-                gatewayNgsiExample:
-                  value:
-                    - id: "urn:ngsi-ld:Gateway:db-ware-gateway-dreimu-001"
-                      type: "Gateway"
-                      name:
-                        type: "Property"
-                        value: "db-ware Gateway Dreiskau-Muckern 001"
-                      gatewayType:
-                        type: "Property"
-                        value: "LoRaWAN"
-                      location:
-                        type: "GeoProperty"
-                        value:
-                          type: "Point"
-                          coordinates: [12.467993795871735, 51.218953978312285]
-                      status:
-                        type: "Property"
-                        value: "Online"
-                        observedAt: "2025-10-11T21:46:21.362Z"
-                      "@context":
-                        - "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
-                        - "https://makerspace-partheland.de/ngsi-ld/v1/"
-        '400':
-          description: "Ungültiger Parameter"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
-        '401':
-          description: "API-Key erforderlich oder ungültig"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
-        '404':
-          description: "Kein Gateway gefunden"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
-
-  /v2/ngsi-ld/entities/gateways/{id}:
-    get:
-      tags: ["API v2 - Unter Entwicklung"]
-      summary: "Erhalte ein Gateway im NGSI-LD-Format (v2)"
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: "Gateway-ID"
-      responses:
-        '200':
-          description: "NGSI-LD Gateway Entity"
-          content:
-            application/ld+json:
-              schema:
-                type: object
-        '404':
-          description: "Gateway nicht gefunden"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponseV2'
+                $ref: '#/components/schemas/ErrorResponse'

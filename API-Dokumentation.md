@@ -1,145 +1,153 @@
-# Makerspace Partheland - Sensordaten API
+# Sensordaten API
 
-Diese Dokumentation beschreibt, wie Sie die Sensordaten des Makerspace Partheland in Ihre eigenen Anwendungen einbinden können.
+Diese Dokumentation beschreibt die öffentliche Sensordaten-API des Makerspace Partheland e.V.
 
-## Inhaltsverzeichnis
-- [Übersicht](#übersicht)
-- [Verfügbare Daten](#verfügbare-daten)
-- [Zugriffsmöglichkeiten](#zugriffsmöglichkeiten)
-- [Messdaten hochladen](#messdaten-hochladen)
-- [Anwendungsbeispiele](#anwendungsbeispiele)
-- [Anwendungsideen für Wasserstandsdaten](#anwendungsideen-für-wasserstandsdaten)
-- [Technische Details](#technische-details)
+## Basis
 
-## Übersicht
-
-Der Makerspace Partheland stellt Umwelt- und Sensordaten öffentlich zur Verfügung. Diese Daten können Sie für verschiedene Zwecke nutzen:
-- 🏠 Smart Home Automation
-- 🏫 Bildungsprojekte
-- �� Umweltmonitoring
-- 💧 Gewässerüberwachung
-- 📊 Datenanalyse
-
-## Verfügbare Daten
-
-### SenseBox Messstationen
-Unsere SenseBox:home Stationen messen:
-- 🌡️ Temperatur (in °C)
-- 💧 Luftfeuchtigkeit (in %)
-- 📊 Luftdruck (in hPa)
-- 💨 Feinstaub (PM10 und PM2.5)
-- 🔆 UV-Intensität
-- 💡 Beleuchtungsstärke
-- 🔊 Lautstärke (in dB)
-
-### Wasserstandssensoren
-Die Wasserstandssensoren erfassen:
-- 💧 Wasserstand (in cm)
-- 📊 Pegeltrends
-- 🔋 Batteriestatus
-- 📏 Messdistanz
-
-## Zugriffsmöglichkeiten
-
-### 1. Echtzeit-Updates via MQTT (WebSocket)
-Ideal für:
-- Smart Home Systeme (Home Assistant, ioBroker, etc.)
-- Live-Anzeigen
-- Automatisierungen
-
-**Verbindungsdaten:**
-```
-URL: wss://mqtt.makerspace-partheland.de:443/mqtt
-```
-**Verbindungstest mit MQTT Explorer:**
-```
-- Protocol: ws://
-- Host: mqtt.makerspace-partheland.de/mqtt
-- Port: 443
-- Encryption: on
-- Validate certificate: off / on  
+```text
+https://data.makerspace-partheland.de
 ```
 
-**Topics für SenseBox Daten:**
-```
-senseBox:home/Beucha_Nr1
+Die API liefert aktuelle Geräte-, Gateway- und Sensordaten. Die Ausgaben stehen als GeoJSON oder NGSI-LD bereit.
+
+Einige Detail- und Upload-Funktionen benötigen einen API-Key im Header:
+
+```text
+x-api-key: DEIN_API_KEY
 ```
 
-Beispiel-Nachricht:
+Upload-Keys werden nicht öffentlich ausgegeben. Kontakt: https://makerspace-partheland.de/austausch/
+
+## Endpunkte
+
+| Methode | Pfad | Inhalt |
+|---|---|---|
+| `GET` | `/geojson/devices` | Alle Geräte als GeoJSON |
+| `GET` | `/geojson/devices/{type}` | Geräte eines Typs als GeoJSON |
+| `GET` | `/geojson/devices/{type}/{id}` | Einzelnes Gerät als GeoJSON |
+| `GET` | `/ngsi-ld/entities` | Alle Geräte als NGSI-LD |
+| `GET` | `/ngsi-ld/entities/{type}` | Geräte eines Typs als NGSI-LD |
+| `GET` | `/ngsi-ld/entities/{type}/{id}` | Einzelnes Gerät als NGSI-LD |
+| `GET` | `/geojson/gateways` | Alle Gateways als GeoJSON |
+| `GET` | `/geojson/gateways/{id}` | Einzelnes Gateway als GeoJSON |
+| `POST` | `/ingest` | Messdaten hochladen |
+
+Gültige Gerätetypen:
+
+```text
+sensebox
+waterlevel
+temperature
+moisture
+```
+
+## Geräte als GeoJSON
+
+Alle Geräte:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices"
+```
+
+Geräte nach Typ:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices/waterlevel"
+```
+
+Bodenfeuchte-Geräte:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices/moisture"
+```
+
+Ein einzelnes Gerät:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices/sensebox/mspl-70b3d57ed004ce79"
+```
+
+Die Antwort ist eine GeoJSON-`FeatureCollection`. Messwerte stehen unter `properties.measurements`.
+
 ```json
 {
-  "fields": {
-    "Temperatur": 7.9,
-    "Luftfeuchte": 84.3,
-    "Luftdruck": 995.2,
-    "PM10": 38.2,
-    "PM2.5": 17.9,
-    "UV-Intensitaet": 0,
-    "Beleuchtungsstaerke": 0,
-    "Lautstaerke": 45.2
-  },
-  "name": "Beucha_Nr1",
-  "timestamp": 1743194885
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "eui-a84041603a5a0171",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.50305, 51.26937]
+      },
+      "properties": {
+        "name": "LDDS75 Großpösna 2",
+        "type": "WaterLevelDevice",
+        "status": "online",
+        "last_seen": "2026-07-02T07:30:24.738Z",
+        "measurements": {
+          "water_level": {
+            "value": 28,
+            "unit": "MMT",
+            "timestamp": "2026-07-02T07:30:24.738Z"
+          }
+        }
+      }
+    }
+  ]
 }
 ```
 
-**Topics für Wasserstandsdaten:**
-```
-sensoren/LDDS75_Naunhof_1
+## Geräte als NGSI-LD
+
+Alle Geräte:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities"
 ```
 
-Beispiel-Nachricht:
-```json
-{
-  "fields": {
-    "water_level": 327,
-    "meldestufe": 0,
-    "water": "Parthe",
-    "bat": 3.264
-  },
-  "name": "LDDS75_Naunhof_1",
-  "timestamp": 1743193867
-}
+Geräte nach Typ:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities/sensebox"
 ```
 
-### 2. REST-API
-Ideal für:
-- Webseiten
-- Apps
-- Datenanalyse
-- Historische Daten
+Bodenfeuchte-Geräte:
 
-**Basis-URL:**
-```
-https://data.makerspace-partheland.de/
+```bash
+curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities/moisture"
 ```
 
-**Endpunkte:**
-- Alle SenseBox Daten: `/v1/LoRaDevices/senseboxes`
-- Spezifische SenseBox: `/v1/LoRaDevices/senseboxes?device=Beucha_Nr1`
-- Alle Wasserstände: `/v1/LoRaDevices/waterlevels`
-- Spezifischer Wasserstand: `/v1/LoRaDevices/waterlevels?device=LDDS75_Naunhof_1`
+Ein einzelnes Gerät:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities/sensebox/mspl-70b3d57ed004ce79"
+```
+
+NGSI-LD-Antworten enthalten `id`, `type`, Eigenschaften als `Property` oder `GeoProperty` und den NGSI-LD-Kontext.
+
+## Gateways
+
+Alle Gateways:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/gateways"
+```
+
+Ein einzelnes Gateway:
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/gateways/db-ware-gateway-dreimu-001"
+```
+
+Gateway-Antworten sind GeoJSON-`FeatureCollection`-Objekte.
 
 ## Messdaten hochladen
 
-Externe Zulieferer können Messdaten per HTTP an die API v2 liefern. Die genaue Payload-Struktur wird vor der Anbindung abgestimmt.
-Die maximale Payload-Größe beträgt 64 KiB.
+Externe Zulieferer können Messdaten per HTTP hochladen. Die Payload wird vor der Anbindung abgestimmt. Die maximale Payload-Größe beträgt 64 KiB.
 
-**Endpunkt:**
-```
-POST https://data.makerspace-partheland.de/v2/ingest
-```
-
-**Authentifizierung:**
-```
-x-api-key: DEIN_UPLOAD_KEY
-```
-
-Upload-Keys werden nicht öffentlich ausgegeben. Für einen Key bitte über https://makerspace-partheland.de/austausch/ Kontakt aufnehmen.
-
-Beispiel:
 ```bash
-curl -X POST "https://data.makerspace-partheland.de/v2/ingest" \
+curl -X POST "https://data.makerspace-partheland.de/ingest" \
   -H "x-api-key: DEIN_UPLOAD_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -154,368 +162,30 @@ curl -X POST "https://data.makerspace-partheland.de/v2/ingest" \
   }'
 ```
 
-## Anwendungsbeispiele
+Erfolgreiche Uploads werden mit `202 Accepted` angenommen:
 
-### 1a. Home Assistant Integration
-```yaml
-mqtt:
-  sensor:
-    - name: "Außentemperatur Beucha"
-      state_topic: "senseBox:home/Beucha_Nr1"
-      value_template: "{{ value_json.fields.Temperatur }}"
-      unit_of_measurement: "°C"
-    
-    - name: "Luftqualität PM10"
-      state_topic: "senseBox:home/Beucha_Nr1"
-      value_template: "{{ value_json.fields.PM10 }}"
-      unit_of_measurement: "µg/m³"
-
-    - name: "Wasserstand Parthe"
-      state_topic: "sensoren/LDDS75_Naunhof_1"
-      value_template: "{{ value_json.fields.water_level }}"
-      unit_of_measurement: "cm"
+```json
+{
+  "id": "1778276243090-6a1884aa42553",
+  "status": "accepted"
+}
 ```
 
-Diese Home Assistant Konfiguration:
-1. Erstellt drei MQTT-Sensoren für verschiedene Messwerte
-2. Nutzt die MQTT-Integration von Home Assistant
-3. Extrahiert die Werte mittels value_template aus den JSON-Nachrichten
-4. Definiert passende Einheiten für die Anzeige
+## MQTT
 
-Sie können die Konfiguration erweitern durch:
-- Hinzufügen weiterer Sensoren (z.B. Luftfeuchte, UV-Intensität)
-- Erstellen von Automationen basierend auf den Werten
-- Einbinden in Dashboards und Grafiken
-- Konfigurieren von Grenzwert-Benachrichtigungen
+Zusätzlich zur REST-API stehen aktuelle Messwerte per MQTT über WebSocket bereit:
 
-### 1b. ioBroker Integration
-Für die Integration in ioBroker benötigen Sie den MQTT-Adapter. Hier ein Beispiel für die Konfiguration:
-
-1. MQTT-Adapter Installation und Konfiguration:
-```yaml
-Instanz-Einstellungen:
-  URL: wss://mqtt.makerspace-partheland.de:443/mqtt
-  Websoket: aktiviert
-  SSL: aktiviert
-  Port: 443
-  Path: /mqtt
+```text
+wss://mqtt.makerspace-partheland.de:443/mqtt
 ```
 
-2. MQTT-Subscriptions in der Adapter-Konfiguration:
-```
+Beispiel-Topics:
+
+```text
 senseBox:home/Beucha_Nr1
 sensoren/LDDS75_Naunhof_1
 ```
 
-3. Beispiel JavaScript für die Datenverarbeitung (Script-Adapter):
-```javascript
-// Überwachung der Sensordaten
-on({id: 'mqtt.0.senseBox:home.Beucha_Nr1'}, (obj) => {
-    try {
-        const data = JSON.parse(obj.state.val);
-        
-        // Erstelle/Aktualisiere Datenpunkte
-        setState('javascript.0.sensoren.beucha.temperatur', {
-            val: data.fields.Temperatur,
-            ack: true,
-            unit: '°C'
-        });
-        
-        setState('javascript.0.sensoren.beucha.luftfeuchte', {
-            val: data.fields.Luftfeuchte,
-            ack: true,
-            unit: '%'
-        });
-        
-        // Berechne Taupunkt
-        const taupunkt = taupunktBerechnung(data.fields.Temperatur, data.fields.Luftfeuchte);
-        setState('javascript.0.sensoren.beucha.taupunkt', {
-            val: taupunkt,
-            ack: true,
-            unit: '°C'
-        });
-        
-    } catch (e) {
-        console.error('Fehler bei der Verarbeitung der SenseBox-Daten: ' + e);
-    }
-});
+## OpenAPI
 
-// Überwachung der Wasserstandsdaten
-on({id: 'mqtt.0.sensoren.LDDS75_Naunhof_1'}, (obj) => {
-    try {
-        const data = JSON.parse(obj.state.val);
-        
-        setState('javascript.0.sensoren.parthe.wasserstand', {
-            val: data.fields.water_level,
-            ack: true,
-            unit: 'cm'
-        });
-        
-        // Batteriewarnung bei niedrigem Stand
-        if (data.fields.bat < 3.3) {
-            sendTo('telegram.0', {
-                text: `⚠️ Batterie niedrig bei ${data.name}: ${data.fields.bat}V`
-            });
-        }
-        
-    } catch (e) {
-        console.error('Fehler bei der Verarbeitung der Wasserstandsdaten: ' + e);
-    }
-});
-
-// Hilfsfunktion zur Taupunktberechnung
-function taupunktBerechnung(temp, humidity) {
-    const a = 17.27;
-    const b = 237.7;
-    const alpha = ((a * temp) / (b + temp)) + Math.log(humidity/100);
-    return (b * alpha) / (a - alpha);
-}
-```
-
-4. Beispiel für eine VIS-Ansicht:
-```javascript
-[{"tpl":"tplValueFloat","data":{"oid":"javascript.0.sensoren.beucha.temperatur","visibility-cond":"==","visibility-val":1,"is_comma":true,"factor":1,"digits":1,"append":"°C","prepend":"Temperatur: "}},
- {"tpl":"tplValueFloat","data":{"oid":"javascript.0.sensoren.beucha.luftfeuchte","visibility-cond":"==","visibility-val":1,"is_comma":true,"factor":1,"digits":1,"append":"%","prepend":"Luftfeuchte: "}},
- {"tpl":"tplValueFloat","data":{"oid":"javascript.0.sensoren.parthe.wasserstand","visibility-cond":"==","visibility-val":1,"is_comma":true,"factor":1,"digits":0,"append":"cm","prepend":"Wasserstand: "}}]
-```
-
-Dieses ioBroker-Setup bietet:
-1. Automatische MQTT-Verbindung über WebSocket
-2. Strukturierte Datenpunkte für alle Sensormesswerte
-3. Berechnete Werte (z.B. Taupunkt)
-4. Batterieüberwachung mit Telegram-Benachrichtigung
-5. Fertige VIS-Widgets zur Anzeige
-
-Sie können die Integration erweitern durch:
-- Erstellen von Blockly-Programmen für weitere Automatisierungen
-- Hinzufügen von Grenzwertalarmen
-- Integration in Flot oder Echarts Grafiken
-- Verknüpfung mit anderen Adaptern (z.B. Wettervorhersage)
-- Erstellung eigener VIS-Widgets
-- Export der Daten in Influx/SQL-Datenbanken
-
-### 2. Node-RED Flow für Gewässermonitoring
-```json
-[
-    {
-        "id": "mqtt-in",
-        "type": "mqtt in",
-        "topic": "sensoren/LDDS75_Naunhof_1",
-        "mqtt": {
-            "server": "wss://mqtt.makerspace-partheland.de:443/mqtt"
-        },
-        "wires": [["json-parse"]]
-    },
-    {
-        "id": "json-parse",
-        "type": "json",
-        "wires": [["store-data"]]
-    },
-    {
-        "id": "store-data",
-        "type": "function",
-        "name": "Speichere Messwerte",
-        "func": "// Speichere die letzten 12 Messwerte (2 Stunden)\nconst maxLength = 12;\n\n// Hole gespeicherte Werte oder initialisiere Array\nflow.measurements = flow.measurements || [];\n\n// Füge neuen Messwert hinzu\nflow.measurements.push({\n    timestamp: Date.now(),\n    value: msg.payload.fields.water_level\n});\n\n// Behalte nur die letzten X Messungen\nif (flow.measurements.length > maxLength) {\n    flow.measurements.shift();\n}\n\n// Berechne Trend\nif (flow.measurements.length >= 2) {\n    const oldest = flow.measurements[0].value;\n    const newest = flow.measurements[flow.measurements.length - 1].value;\n    const trend = newest - oldest;\n    \n    msg.trend = trend;\n    msg.trendPercent = (trend / oldest * 100).toFixed(1);\n    msg.currentValue = newest;\n    \n    return msg;\n}\n\nreturn null;",
-        "wires": [["check-trend"]]
-    },
-    {
-        "id": "check-trend",
-        "type": "switch",
-        "name": "Prüfe Trend",
-        "rules": [
-            {
-                "t": "gt",
-                "v": "5",
-                "vt": "num"
-            },
-            {
-                "t": "lt",
-                "v": "-5",
-                "vt": "num"
-            }
-        ],
-        "wires": [["create-message"], ["create-message"]]
-    },
-    {
-        "id": "create-message",
-        "type": "template",
-        "name": "Erstelle Nachricht",
-        "template": "Wasserstandsänderung: {{ payload.trendPercent }}%\nAktueller Stand: {{ payload.currentValue }} cm",
-        "wires": [["notify"]]
-    },
-    {
-        "id": "notify",
-        "type": "debug",
-        "name": "Ausgabe",
-        "active": true,
-        "complete": "payload"
-    }
-]
-```
-
-Dieser Flow:
-1. Empfängt MQTT-Nachrichten vom Wasserstandssensor
-2. Wandelt die JSON-Daten in ein Objekt um
-3. Speichert die letzten 12 Messwerte (2 Stunden bei 10-Minuten-Intervallen)
-4. Berechnet den Trend über diesen Zeitraum
-5. Benachrichtigt bei Änderungen über 5% (kann an Debug-Node oder Benachrichtigungsdienst angeschlossen werden)
-
-Sie können den Flow anpassen durch:
-- Ändern der `maxLength` für längere/kürzere Beobachtungszeiträume
-- Anpassen der Schwellwerte in der Switch-Node (aktuell 5/-5)
-- Ersetzen der Debug-Node durch Email, Telegram, Push-Benachrichtigungen etc.
-
-### 3. Python-Script für Gewässeranalyse
-```python
-import requests
-import pandas as pd
-from datetime import datetime, timedelta
-
-# Abruf der Wasserstandsdaten
-response = requests.get('https://data.makerspace-partheland.de/v1/LoRaDevices/waterlevels?device=LDDS75_Naunhof_1')
-data = response.json()
-
-# Daten in DataFrame umwandeln
-df = pd.DataFrame({
-    'Wasserstand': [data['features'][0]['properties']['fields']['water_level']],
-    'Zeitstempel': [datetime.fromtimestamp(data['features'][0]['properties']['lastSeen'])],
-    'Gewässer': [data['features'][0]['properties']['fields']['water']]
-})
-
-# Analyse
-print(f"Aktueller Wasserstand {df['Gewässer'][0]}: {df['Wasserstand'][0]} cm")
-print(f"Letzte Messung: {df['Zeitstempel'][0].strftime('%d.%m.%Y %H:%M')}")
-```
-
-Dieses Python-Script:
-1. Nutzt die REST-API zum Abrufen der Wasserstandsdaten
-2. Konvertiert die Unix-Timestamps in lesbare Zeitstempel
-3. Strukturiert die Daten in einem Pandas DataFrame für weitere Analysen
-4. Gibt eine formatierte Zusammenfassung aus
-
-Sie können das Script erweitern durch:
-- Abrufen historischer Daten für Trendanalysen, sobald diese Endpunkte aktiv sind
-- Erstellen von Matplotlib/Seaborn Visualisierungen
-- Export der Daten in CSV/Excel für weitere Verarbeitung
-- Implementierung von statistischen Analysen
-- Kombination mit Wetterdaten für Korrelationsanalysen
-
-### 4. Schulprojekt: Gewässerökologie
-```javascript
-// HTML + Chart.js
-const ctx = document.getElementById('wasserstandChart').getContext('2d');
-const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            label: 'Wasserstand Parthe',
-            data: [],
-            borderColor: 'rgb(54, 162, 235)',
-            tension: 0.1
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                title: {
-                    display: true,
-                    text: 'Wasserstand (cm)'
-                }
-            }
-        }
-    }
-});
-
-// MQTT Verbindung
-const client = mqtt.connect('wss://mqtt.makerspace-partheland.de:443/mqtt');
-client.subscribe('sensoren/LDDS75_Naunhof_1');
-
-client.on('message', (topic, message) => {
-    const data = JSON.parse(message);
-    const zeit = new Date().toLocaleTimeString();
-    
-    // Füge neue Daten hinzu
-    chart.data.labels.push(zeit);
-    chart.data.datasets[0].data.push(data.fields.water_level);
-    
-    // Behalte nur die letzten 24 Stunden
-    if (chart.data.labels.length > 288) { // 24h * 12 Messungen/Stunde
-        chart.data.labels.shift();
-        chart.data.datasets[0].data.shift();
-    }
-    
-    chart.update();
-});
-```
-
-Dieses JavaScript-Beispiel:
-1. Erstellt ein interaktives Liniendiagramm mit Chart.js
-2. Verbindet sich über WebSocket mit dem MQTT-Broker
-3. Aktualisiert das Diagramm in Echtzeit mit neuen Messwerten
-4. Behält einen 24-Stunden-Verlauf bei (288 Messpunkte)
-5. Formatiert die Zeitachse automatisch
-
-Sie können das Beispiel erweitern durch:
-- Hinzufügen mehrerer Datensätze (z.B. verschiedene Messstellen)
-- Implementierung von Zoom- und Pan-Funktionen
-- Export der Daten als CSV oder Bild
-- Anzeige von Minimum/Maximum/Durchschnittswerten
-- Hinzufügen von Schwellwert-Markierungen
-- Integration in eine größere Webapplikation
-
-Benötigte HTML-Struktur:
-```html
-<canvas id="wasserstandChart"></canvas>
-
-<!-- Erforderliche Bibliotheken -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-```
-
-## Anwendungsideen für Wasserstandsdaten
-
-### Umweltbildung
-- 📚 Langzeitbeobachtung von Gewässern
-- 🌱 Zusammenhang zwischen Niederschlag und Wasserstand
-- 🔍 Einfluss der Jahreszeiten auf Gewässer
-
-### Gewässermanagement
-- 📊 Pegelstandsüberwachung
-- 💧 Wasserressourcenmanagement
-- 🌿 Ökologische Durchgängigkeit
-
-### Freizeitaktivitäten
-- 🚣 Wassersport (Kanu, Rudern)
-- 🎣 Angelsport
-- 🏊 Badegewässer
-
-### Wissenschaft & Forschung
-- 📈 Langzeitstudien
-- 🌍 Klimawandelauswirkungen
-- 💧 Grundwasserspiegel-Korrelation
-
-## Technische Details
-
-### Datenaktualisierung
-- SenseBox Daten: Alle 1-5 Minuten
-- Wasserstandsdaten: Alle 15-30 Minuten
-
-### Datenformate
-- Alle Zeitstempel sind Unix-Timestamps (Sekunden seit 1970)
-- Temperatur in °C
-- Luftfeuchte in %
-- Luftdruck in hPa
-- Feinstaub in µg/m³
-- Wasserstand in cm
-- UV-Intensität in mW/m²
-- Lautstärke in dB
-
-### Fehlerbehebung
-1. Keine MQTT-Verbindung:
-   - Überprüfen Sie die WebSocket-URL
-   - Stellen Sie sicher, dass SSL/TLS aktiviert ist
-
-2. Keine Daten:
-   - Überprüfen Sie das Topic-Format
-   - Prüfen Sie die Zeitstempel der letzten Nachricht
+Die OpenAPI-Spezifikation liegt in `swagger.yaml`. Die gerenderte Swagger-UI ist unter https://data.makerspace-partheland.de/swagger erreichbar.

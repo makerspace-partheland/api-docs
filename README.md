@@ -1,13 +1,13 @@
-# LoRa Geräte API
+# Sensordaten API
 
-Eine RESTful API für den Zugriff auf LoRa-Geräte und deren Sensordaten des Makerspace Partheland e.V.
+Eine RESTful API für den Zugriff auf Geräte, Gateways und Sensordaten des Makerspace Partheland e.V.
 
 ## Übersicht
 
-Diese API ermöglicht den Zugriff auf Daten von verschiedenen LoRa-Geräten, darunter senseBoxen und Wasserstandssensoren. Sie bietet Endpunkte zum Abrufen von Geräteinformationen, Statusabfragen und detaillierten Sensordaten.
+Diese API ermöglicht den Zugriff auf aktuelle Geräte-, Gateway- und Sensordaten. Die öffentlichen Daten stehen als GeoJSON und NGSI-LD bereit.
 
 ## API-Basis-URL
-https://data.makerspace-partheland.de/v1
+https://data.makerspace-partheland.de
 
 ## Authentifizierung
 
@@ -16,40 +16,48 @@ Einige Endpunkte erfordern eine Authentifizierung mittels API-Key. Der API-Key m
 
 ## Hauptendpunkte
 
-- `/LoRaDevices` - Liste aller LoRa-Geräte (öffentlich zugänglich)
-- `/LoRaDevices/senseboxes` - Liste aller senseBox-Geräte (öffentlich zugänglich)
-- `/LoRaDevices/waterlevels` - Liste aller Wasserstand/Pegelstands-Geräte (öffentlich zugänglich)
-- `/v2/ingest` - HTTP-Upload für externe Messdatenzulieferer (erfordert API-Key)
+- `/geojson/devices` - Geräte und Sensordaten als GeoJSON
+- `/geojson/devices/{type}` - Geräte nach Typ als GeoJSON
+- `/geojson/devices/{type}/{id}` - Einzelnes Gerät als GeoJSON
+- `/ngsi-ld/entities` - Geräte und Sensordaten als NGSI-LD
+- `/ngsi-ld/entities/{type}` - Geräte nach Typ als NGSI-LD
+- `/ngsi-ld/entities/{type}/{id}` - Einzelnes Gerät als NGSI-LD
+- `/geojson/gateways` - Gateways als GeoJSON
+- `/geojson/gateways/{id}` - Einzelnes Gateway als GeoJSON
+- `/ingest` - HTTP-Upload für externe Messdatenzulieferer (erfordert API-Key)
 
-Jeder Gerätetyp bietet zusätzliche Endpunkte:
-
-- `/{gerätetyp}/health` - Statusabfrage der Geräte (öffentlich zugänglich)
-- `/{gerätetyp}/details` - Detaillierte Informationen und Sensorenwerte zu einem bestimmten Gerät (erfordert API-Key)
+Gängige Gerätetypen sind `sensebox`, `waterlevel`, `temperature` und `moisture`.
 
 ## Beispielanfragen
 
-### Alle LoRa-Geräte abrufe
+### Alle Geräte als GeoJSON abrufen
 
 ```bash
-curl -X GET "https://data.makerspace-partheland.de/v1/LoRaDevices"
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices"
 ```
 
-### Status einer bestimmten senseBox abrufen
+### Geräte eines Typs als GeoJSON abrufen
 
 ```bash
-curl -X GET "https://data.makerspace-partheland.de/v1/LoRaDevices/senseboxes/details?name=Beucha_Nr1"
+curl -X GET "https://data.makerspace-partheland.de/geojson/devices/sensebox"
 ```
 
-### Status einer bestimmten Wasserstand/Pegelstands-Gerät abrufen
+### Geräte als NGSI-LD abrufen
 
 ```bash
-curl -X GET "https://data.makerspace-partheland.de/v1/LoRaDevices/waterlevels/details?name=LDDS75_Naunhof_1"
+curl -X GET "https://data.makerspace-partheland.de/ngsi-ld/entities"
+```
+
+### Gateways als GeoJSON abrufen
+
+```bash
+curl -X GET "https://data.makerspace-partheland.de/geojson/gateways"
 ```
 
 ### Messdaten hochladen
 
 ```bash
-curl -X POST "https://data.makerspace-partheland.de/v2/ingest" \
+curl -X POST "https://data.makerspace-partheland.de/ingest" \
   -H "x-api-key: DEIN_UPLOAD_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -78,4 +86,4 @@ Swagger UI und GitHub-Actions-Abhängigkeiten werden automatisiert aktualisiert.
 
 ## Unterstützung
 
-Bei Fragen oder Problemen melde Dich bitte via: https://makerspace-partheland.de/austausch/
+Bei Fragen oder Problemen: https://makerspace-partheland.de/austausch/
