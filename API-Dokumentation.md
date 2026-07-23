@@ -69,6 +69,18 @@ curl -X GET "https://data.makerspace-partheland.de/geojson/devices/sensebox/mspl
 
 Die Antwort ist eine GeoJSON-`FeatureCollection`. Messwerte stehen unter `properties.measurements`.
 
+SenseBox-Geräte können die Batteriespannung als `battery` mit der Einheit `VLT` ausgeben, wenn die Station diesen Wert übermittelt.
+
+```json
+{
+  "battery": {
+    "value": 4.13,
+    "unit": "VLT",
+    "timestamp": "2026-07-23T08:12:01.000Z"
+  }
+}
+```
+
 ```json
 {
   "type": "FeatureCollection",

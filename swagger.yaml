@@ -28,7 +28,8 @@ info:
         "PM2.5": 17.9,
         "PM25_Max": 19.3,
         "Temperatur": 7.9,
-        "UV-Intensitaet": 0
+        "UV-Intensitaet": 0,
+        "bat": 4.13
       },
       "name": "Beucha_Nr1",
       "timestamp": 1743194885
@@ -531,6 +532,10 @@ paths:
                             pm2_5:
                               value: 4.2
                               unit: "GQ"
+                              timestamp: "2025-10-11T19:34:22.000Z"
+                            battery:
+                              value: 4.13
+                              unit: "VLT"
                               timestamp: "2025-10-11T19:34:22.000Z"
                 waterLevel:
                   summary: "Wasserstandssensor (WaterLevelDevice)"
