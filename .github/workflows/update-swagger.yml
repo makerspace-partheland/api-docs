@@ -4,9 +4,15 @@ on:
     - cron:  '0 10 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   updateSwagger:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7.0.0
       - name: Get Latest Swagger UI Release
@@ -14,12 +20,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          release_tag=$(gh release view --repo swagger-api/swagger-ui --json tagName --jq '.tagName')
+          release_data=$(gh release view --repo swagger-api/swagger-ui --json tagName,publishedAt --jq '[.tagName, .publishedAt] | @tsv')
+          read -r release_tag published_at <<< "$release_data"
           echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
           current_tag=$(<swagger-ui.version)
           echo "current_tag=$current_tag" >> $GITHUB_OUTPUT
+          release_epoch=$(date --date="$published_at" +%s)
+          cooldown_epoch=$(date --date="7 days ago" +%s)
+          if (( release_epoch <= cooldown_epoch )); then
+            echo "eligible=true" >> $GITHUB_OUTPUT
+          else
+            echo "eligible=false" >> $GITHUB_OUTPUT
+          fi
       - name: Update Swagger UI
-        if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag
+        if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag && steps.swagger-ui.outputs.eligible == 'true'
         env:
           RELEASE_TAG: ${{ steps.swagger-ui.outputs.release_tag }}
           SWAGGER_YAML: "swagger.yaml"
@@ -41,6 +55,7 @@ jobs:
           # Update current release
           echo ${{ steps.swagger-ui.outputs.release_tag }} > swagger-ui.version
       - name: Create Pull Request
+        if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag && steps.swagger-ui.outputs.eligible == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
