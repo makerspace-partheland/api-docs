@@ -15,36 +15,87 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v7.0.0
+        with:
+          persist-credentials: false
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+
           release_data=$(gh release view --repo swagger-api/swagger-ui --json tagName,publishedAt --jq '[.tagName, .publishedAt] | @tsv')
           read -r release_tag published_at <<< "$release_data"
-          echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
+
+          if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
+            echo "Unexpected Swagger UI release tag: $release_tag" >&2
+            exit 1
+          fi
+
+          read -r object_type release_commit <<< "$(gh api "repos/swagger-api/swagger-ui/git/ref/tags/$release_tag" --jq '.object | [.type, .sha] | @tsv')"
+          for _ in {1..5}; do
+            if [[ "$object_type" == "commit" ]]; then
+              break
+            fi
+            if [[ "$object_type" != "tag" ]]; then
+              echo "Swagger UI release tag does not resolve to a commit" >&2
+              exit 1
+            fi
+            read -r object_type release_commit <<< "$(gh api "repos/swagger-api/swagger-ui/git/tags/$release_commit" --jq '.object | [.type, .sha] | @tsv')"
+          done
+
+          if [[ "$object_type" != "commit" || ! "$release_commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Swagger UI release tag did not resolve to a valid commit" >&2
+            exit 1
+          fi
+
+          printf '%s\n' "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "release_commit=$release_commit" >> "$GITHUB_OUTPUT"
+
           current_tag=$(<swagger-ui.version)
-          echo "current_tag=$current_tag" >> $GITHUB_OUTPUT
+          current_commit=""
+          if [[ -f swagger-ui.commit ]]; then
+            current_commit=$(<swagger-ui.commit)
+          fi
+          printf '%s\n' "current_tag=$current_tag" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "current_commit=$current_commit" >> "$GITHUB_OUTPUT"
+
+          if [[ "$current_tag" != "$release_tag" || "$current_commit" != "$release_commit" ]]; then
+            printf '%s\n' "update_required=true" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "update_required=false" >> "$GITHUB_OUTPUT"
+          fi
+
           release_epoch=$(date --date="$published_at" +%s)
           cooldown_epoch=$(date --date="7 days ago" +%s)
           if (( release_epoch <= cooldown_epoch )); then
-            echo "eligible=true" >> $GITHUB_OUTPUT
+            printf '%s\n' "eligible=true" >> "$GITHUB_OUTPUT"
           else
-            echo "eligible=false" >> $GITHUB_OUTPUT
+            printf '%s\n' "eligible=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Update Swagger UI
-        if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag && steps.swagger-ui.outputs.eligible == 'true'
+        if: steps.swagger-ui.outputs.update_required == 'true' && steps.swagger-ui.outputs.eligible == 'true'
         env:
           RELEASE_TAG: ${{ steps.swagger-ui.outputs.release_tag }}
+          RELEASE_COMMIT: ${{ steps.swagger-ui.outputs.release_commit }}
           SWAGGER_YAML: "swagger.yaml"
         run: |
+          set -euo pipefail
+
           # Delete the dist directory and index.html
           rm -fr dist index.html
-          # Download the release
-          curl -sL -o $RELEASE_TAG https://api.github.com/repos/swagger-api/swagger-ui/tarball/$RELEASE_TAG
+          # Download the immutable release commit
+          archive="swagger-ui.tar.gz"
+          curl --fail --silent --show-error --location --output "$archive" \
+            "https://api.github.com/repos/swagger-api/swagger-ui/tarball/$RELEASE_COMMIT"
           # Extract the dist directory
-          tar -xzf $RELEASE_TAG --strip-components=1 $(tar -tzf $RELEASE_TAG | head -1 | cut -f1 -d"/")/dist
-          rm $RELEASE_TAG
+          archive_root=$(tar -tzf "$archive" | sed -n '1p' | cut -f1 -d"/")
+          if [[ -z "$archive_root" ]]; then
+            echo "Swagger UI archive is empty" >&2
+            exit 1
+          fi
+          tar -xzf "$archive" --strip-components=1 "$archive_root/dist"
+          rm "$archive"
           # Move index.html to the root
           mv dist/index.html .
           # Fix references in dist/swagger-initializer and index.html
@@ -53,9 +104,10 @@ jobs:
           sed -i "s|src=\"./|src=\"dist/|g" index.html
           sed -i "s|href=\"index|href=\"dist/index|g" index.html
           # Update current release
-          echo ${{ steps.swagger-ui.outputs.release_tag }} > swagger-ui.version
+          printf '%s\n' "$RELEASE_TAG" > swagger-ui.version
+          printf '%s\n' "$RELEASE_COMMIT" > swagger-ui.commit
       - name: Create Pull Request
-        if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag && steps.swagger-ui.outputs.eligible == 'true'
+        if: steps.swagger-ui.outputs.update_required == 'true' && steps.swagger-ui.outputs.eligible == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
