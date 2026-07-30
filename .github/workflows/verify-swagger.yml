@@ -1,0 +1,89 @@
+name: Verify Swagger UI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Swagger UI artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Verify pinned release and generated artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          release_tag=$(<swagger-ui.version)
+          release_commit=$(<swagger-ui.commit)
+
+          if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
+            echo "Unexpected Swagger UI release tag: $release_tag" >&2
+            exit 1
+          fi
+          if [[ ! "$release_commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid Swagger UI release commit: $release_commit" >&2
+            exit 1
+          fi
+
+          read -r object_type resolved_commit <<< "$(gh api "repos/swagger-api/swagger-ui/git/ref/tags/$release_tag" --jq '.object | [.type, .sha] | @tsv')"
+          for _ in {1..5}; do
+            if [[ "$object_type" == "commit" ]]; then
+              break
+            fi
+            if [[ "$object_type" != "tag" ]]; then
+              echo "Swagger UI release tag does not resolve to a commit" >&2
+              exit 1
+            fi
+            read -r object_type resolved_commit <<< "$(gh api "repos/swagger-api/swagger-ui/git/tags/$resolved_commit" --jq '.object | [.type, .sha] | @tsv')"
+          done
+
+          if [[ "$object_type" != "commit" || "$resolved_commit" != "$release_commit" ]]; then
+            echo "Pinned commit does not match release tag $release_tag" >&2
+            exit 1
+          fi
+
+          published_at=$(gh release view "$release_tag" --repo swagger-api/swagger-ui --json publishedAt --jq '.publishedAt')
+          if ! python3 -c 'from datetime import datetime, timedelta, timezone; import sys; raise SystemExit(0 if datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00")) <= datetime.now(timezone.utc) - timedelta(days=7) else 1)' "$published_at"; then
+            echo "Swagger UI release is less than 7 days old" >&2
+            exit 1
+          fi
+
+          work_dir=$(mktemp -d)
+          trap 'rm -rf "$work_dir"' EXIT
+          archive="$work_dir/swagger-ui.tar.gz"
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2026-03-10" \
+            --output "$archive" \
+            "https://api.github.com/repos/swagger-api/swagger-ui/tarball/$release_commit"
+
+          archive_root=$(tar -tzf "$archive" | sed -n '1p' | cut -f1 -d"/")
+          if [[ -z "$archive_root" ]]; then
+            echo "Swagger UI archive is empty" >&2
+            exit 1
+          fi
+          tar -xzf "$archive" -C "$work_dir" --strip-components=1 "$archive_root/dist"
+          mv "$work_dir/dist/index.html" "$work_dir/index.html"
+          sed "s|https://petstore.swagger.io/v2/swagger.json|swagger.yaml|g" "$work_dir/dist/swagger-initializer.js" > "$work_dir/swagger-initializer.js"
+          mv "$work_dir/swagger-initializer.js" "$work_dir/dist/swagger-initializer.js"
+          sed \
+            -e "s|href=\"./|href=\"dist/|g" \
+            -e "s|src=\"./|src=\"dist/|g" \
+            -e "s|href=\"index|href=\"dist/index|g" \
+            "$work_dir/index.html" > "$work_dir/index.generated.html"
+          mv "$work_dir/index.generated.html" "$work_dir/index.html"
+
+          diff -u index.html "$work_dir/index.html"
+          diff -ru dist "$work_dir/dist"
