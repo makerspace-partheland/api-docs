@@ -22,6 +22,8 @@ jobs:
       - name: Verify pinned release and generated artifacts
         env:
           GH_TOKEN: ${{ github.token }}
+          # Die Freigabe kommt aus den Repository-Einstellungen, nicht aus dem PR.
+          SWAGGER_UI_SECURITY_EXCEPTION: ${{ vars.SWAGGER_UI_SECURITY_EXCEPTION }}
         run: |
           set -euo pipefail
 
@@ -55,10 +57,49 @@ jobs:
           fi
 
           published_at=$(gh release view "$release_tag" --repo swagger-api/swagger-ui --json publishedAt --jq '.publishedAt')
-          if ! python3 -c 'from datetime import datetime, timedelta, timezone; import sys; raise SystemExit(0 if datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00")) <= datetime.now(timezone.utc) - timedelta(days=7) else 1)' "$published_at"; then
-            echo "Swagger UI release is less than 7 days old" >&2
-            exit 1
-          fi
+          python3 - "$published_at" "$release_tag" "$release_commit" <<'PY'
+          from datetime import datetime, timedelta, timezone
+          import json
+          import os
+          import sys
+          from urllib.parse import urlsplit
+
+          def timestamp(value):
+              parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+              if parsed.tzinfo is None:
+                  raise ValueError("Zeitstempel ohne Zeitzone")
+              return parsed
+
+          now = datetime.now(timezone.utc)
+          published = timestamp(sys.argv[1])
+          if published <= now - timedelta(days=7):
+              sys.exit(0)
+
+          # Nur die Altersfrist darf für den exakt freigegebenen Fix entfallen.
+          try:
+              approval = json.loads(os.environ.get("SWAGGER_UI_SECURITY_EXCEPTION", ""))
+              fields = ("tag", "commit", "advisory", "reason", "expires_at")
+              if not isinstance(approval, dict) or any(
+                  not isinstance(approval.get(key), str) or not approval[key].strip()
+                  for key in fields
+              ):
+                  raise ValueError("Unvollständige Sicherheitsfreigabe")
+              advisory = urlsplit(approval["advisory"])
+              if (
+                  approval["tag"] != sys.argv[2]
+                  or approval["commit"] != sys.argv[3]
+                  or advisory.scheme != "https"
+                  or not advisory.hostname
+                  or advisory.username is not None
+                  or advisory.password is not None
+                  or not published <= now < timestamp(approval["expires_at"]) <= published + timedelta(days=7)
+              ):
+                  raise ValueError("Sicherheitsfreigabe passt nicht oder ist abgelaufen")
+          except (ValueError, TypeError) as error:
+              print(f"Swagger UI ist jünger als 168 Stunden; gültige Sicherheitsfreigabe fehlt: {error}", file=sys.stderr)
+              sys.exit(1)
+          print("Die versionsgebundene Sicherheitsfreigabe ersetzt ausschließlich die Altersfrist.")
+          PY
 
           work_dir=$(mktemp -d)
           trap 'rm -rf "$work_dir"' EXIT
