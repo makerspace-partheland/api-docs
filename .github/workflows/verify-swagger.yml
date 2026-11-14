@@ -128,3 +128,98 @@ jobs:
 
           diff -u index.html "$work_dir/index.html"
           diff -ru dist "$work_dir/dist"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          check-latest: true
+      - name: npm-Version aus der Projektkonfiguration verwenden
+        working-directory: .github
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').devDependencies.npm")
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          npm install --global --prefix "$RUNNER_TEMP/npm" --ignore-scripts --min-release-age=7 "npm@$version"
+          printf '%s\n' "$RUNNER_TEMP/npm/bin" >> "$GITHUB_PATH"
+      - name: Statische API-Dokumentation im Browser prüfen
+        working-directory: .github
+        run: |
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+          npm audit signatures
+          npx --no-install playwright install --with-deps chromium
+          npm test
+
+  merge-update:
+    needs: verify
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'master' &&
+      ((github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]') ||
+       (github.actor == format('{0}[bot]', vars.MAINTENANCE_APP_SLUG) &&
+        github.event.pull_request.user.login == format('{0}[bot]', vars.MAINTENANCE_APP_SLUG) &&
+        github.event.pull_request.head.ref == 'swagger-ui-updates'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      pages: write
+    concurrency:
+      group: update-integration
+      queue: max
+      cancel-in-progress: false
+    steps:
+      # Kein Checkout und keine Ausführung von PR-Code mit Schreibrechten.
+      - name: Signierte Dependabot-Metadaten prüfen
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
+        with:
+          github-token: ${{ github.token }}
+      - name: Geprüftes Update übernehmen und Pages-Veröffentlichung anfordern
+        if: >-
+          github.event.pull_request.user.login == format('{0}[bot]', vars.MAINTENANCE_APP_SLUG) ||
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          IS_SWAGGER: ${{ github.event.pull_request.user.login == format('{0}[bot]', vars.MAINTENANCE_APP_SLUG) }}
+          MAINTENANCE_BOT: ${{ format('{0}[bot]', vars.MAINTENANCE_APP_SLUG) }}
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ && "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ && "$EXPECTED_BASE" =~ ^[0-9a-f]{40}$ ]]
+          pr=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+          author='dependabot[bot]'
+          allowed='^\.github/(workflows/[^/]+\.yml|package(-lock)?\.json)$'
+          if [ "$IS_SWAGGER" = true ]; then
+            author="$MAINTENANCE_BOT"
+            allowed='^(index\.html|dist/.+|swagger-ui\.(version|commit))$'
+            jq -e '.head.ref == "swagger-ui-updates"' <<< "$pr" > /dev/null
+            current=$(gh api "repos/$GH_REPO/contents/swagger-ui.version?ref=master" --jq .content | base64 --decode)
+            candidate=$(gh api "repos/$GH_REPO/contents/swagger-ui.version?ref=$EXPECTED_SHA" --jq .content | base64 --decode)
+            if [ "${current%%.*}" != "${candidate%%.*}" ]; then
+              echo 'Der Major-Wechsel bleibt als geprüfter PR zur Entscheidung offen.'
+              exit 0
+            fi
+          fi
+          jq -e --arg author "$author" --arg repo "$GH_REPO" --arg sha "$EXPECTED_SHA" \
+            '.state == "open" and .draft == false and .user.login == $author and .base.ref == "master" and .head.repo.full_name == $repo and .head.sha == $sha' <<< "$pr" > /dev/null
+          files=$(gh pr diff "$PR_NUMBER" --name-only)
+          if [ -z "$files" ] || printf '%s\n' "$files" | grep -Evq "$allowed"; then
+            echo 'Das Update enthält Änderungen außerhalb der vorgesehenen Dateien.'
+            exit 0
+          fi
+          if [ "$(gh api "repos/$GH_REPO/git/ref/heads/master" --jq .object.sha)" != "$EXPECTED_BASE" ]; then
+            echo 'Die Basis hat sich geändert; ein aktueller PR-Prüflauf ist erforderlich.'
+            exit 0
+          fi
+          gh pr merge "$PR_NUMBER" --squash --match-head-commit "$EXPECTED_SHA" \
+            --subject "Abhängigkeiten aktualisiert (#$PR_NUMBER)" --body ""
+          echo 'Update übernommen; Pages-Veröffentlichung wird angefordert.'
+          gh api --method POST "repos/$GH_REPO/pages/builds" > /dev/null

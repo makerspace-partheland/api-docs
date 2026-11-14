@@ -5,3 +5,7 @@
 /xnotes
 .cursorignore
 /.ai
+
+.github/node_modules/
+.github/test-results/
+.github/playwright-report/
