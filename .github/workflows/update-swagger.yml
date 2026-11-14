@@ -9,14 +9,24 @@ permissions:
 
 jobs:
   updateSwagger:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Kurzlebigen Zugriff für den Update-PR erstellen
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ vars.MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: api-docs
+          permission-contents: write
+          permission-pull-requests: write
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         env:
@@ -24,7 +34,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          release_data=$(gh release view --repo swagger-api/swagger-ui --json tagName,publishedAt --jq '[.tagName, .publishedAt] | @tsv')
+          export RELEASE_CUTOFF
+          RELEASE_CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          release_data=$(gh api --paginate --slurp 'repos/swagger-api/swagger-ui/releases?per_page=100' \
+            | jq -r '[.[][] | select(.draft == false and .prerelease == false and .published_at <= env.RELEASE_CUTOFF and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))]
+                  | sort_by(.tag_name | ltrimstr("v") | split(".") | map(tonumber))
+                  | (last // error("Kein freigegebener stabiler Swagger-UI-Release verfügbar"))
+                  | [.tag_name, .published_at] | @tsv')
           read -r release_tag published_at <<< "$release_data"
 
           if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z]+)*$ ]]; then
@@ -53,6 +69,10 @@ jobs:
           printf '%s\n' "release_commit=$release_commit" >> "$GITHUB_OUTPUT"
 
           current_tag=$(<swagger-ui.version)
+          if [[ ! "$current_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'Die installierte Swagger-UI-Version ist nicht eindeutig.' >&2
+            exit 1
+          fi
           current_commit=""
           if [[ -f swagger-ui.commit ]]; then
             current_commit=$(<swagger-ui.commit)
@@ -60,7 +80,12 @@ jobs:
           printf '%s\n' "current_tag=$current_tag" >> "$GITHUB_OUTPUT"
           printf '%s\n' "current_commit=$current_commit" >> "$GITHUB_OUTPUT"
 
-          if [[ "$current_tag" != "$release_tag" || "$current_commit" != "$release_commit" ]]; then
+          if [[ "$current_tag" == "$release_tag" && "$current_commit" != "$release_commit" ]]; then
+            echo 'Der bereits übernommene Release-Tag verweist auf einen anderen Commit.' >&2
+            exit 1
+          fi
+          newest=$(printf '%s\n%s\n' "$current_tag" "$release_tag" | sort -V | tail -1)
+          if [[ "$current_tag" != "$release_tag" && "$newest" == "$release_tag" ]]; then
             printf '%s\n' "update_required=true" >> "$GITHUB_OUTPUT"
           else
             printf '%s\n' "update_required=false" >> "$GITHUB_OUTPUT"
@@ -74,6 +99,7 @@ jobs:
             printf '%s\n' "eligible=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Update Swagger UI
+        id: prepare-update
         if: steps.swagger-ui.outputs.update_required == 'true' && steps.swagger-ui.outputs.eligible == 'true'
         env:
           RELEASE_TAG: ${{ steps.swagger-ui.outputs.release_tag }}
@@ -82,10 +108,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Delete the dist directory and index.html
-          rm -fr dist index.html
+          # Die Versionsmarker machen auch einen inkompatiblen Release als PR sichtbar.
+          printf '%s\n' "$RELEASE_TAG" > swagger-ui.version
+          printf '%s\n' "$RELEASE_COMMIT" > swagger-ui.commit
+          work_dir=$(mktemp -d)
+          trap 'rm -rf "$work_dir"' EXIT
           # Download the immutable release commit
-          archive="swagger-ui.tar.gz"
+          archive="$work_dir/swagger-ui.tar.gz"
           curl --fail --silent --show-error --location --output "$archive" \
             "https://api.github.com/repos/swagger-api/swagger-ui/tarball/$RELEASE_COMMIT"
           # Extract the dist directory
@@ -94,30 +123,32 @@ jobs:
             echo "Swagger UI archive is empty" >&2
             exit 1
           fi
-          tar -xzf "$archive" --strip-components=1 "$archive_root/dist"
+          tar -xzf "$archive" -C "$work_dir" --strip-components=1 "$archive_root/dist"
           rm "$archive"
           # Move index.html to the root
-          mv dist/index.html .
+          mv "$work_dir/dist/index.html" "$work_dir/index.html"
           # Fix references in dist/swagger-initializer and index.html
-          sed -i "s|https://petstore.swagger.io/v2/swagger.json|$SWAGGER_YAML|g" dist/swagger-initializer.js
-          sed -i "s|href=\"./|href=\"dist/|g" index.html
-          sed -i "s|src=\"./|src=\"dist/|g" index.html
-          sed -i "s|href=\"index|href=\"dist/index|g" index.html
-          # Update current release
-          printf '%s\n' "$RELEASE_TAG" > swagger-ui.version
-          printf '%s\n' "$RELEASE_COMMIT" > swagger-ui.commit
+          sed -i "s|https://petstore.swagger.io/v2/swagger.json|$SWAGGER_YAML|g" "$work_dir/dist/swagger-initializer.js"
+          sed -i "s|href=\"./|href=\"dist/|g" "$work_dir/index.html"
+          sed -i "s|src=\"./|src=\"dist/|g" "$work_dir/index.html"
+          sed -i "s|href=\"index|href=\"dist/index|g" "$work_dir/index.html"
+          rm -rf dist
+          mv "$work_dir/dist" dist
+          mv "$work_dir/index.html" index.html
       - name: Create Pull Request
-        if: steps.swagger-ui.outputs.update_required == 'true' && steps.swagger-ui.outputs.eligible == 'true'
+        if: >-
+          !cancelled() && steps.swagger-ui.outputs.update_required == 'true' &&
+          steps.swagger-ui.outputs.eligible == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
-          title: Update SwaggerUI to ${{ steps.swagger-ui.outputs.release_tag }}
+          token: ${{ steps.app-token.outputs.token }}
+          sign-commits: true
+          draft: ${{ steps.prepare-update.outcome == 'success' && 'false' || 'always-true' }}
+          commit-message: Swagger-UI-Aktualisierung auf ${{ steps.swagger-ui.outputs.release_tag }} vorbereitet
+          title: Aktualisierung auf Swagger UI ${{ steps.swagger-ui.outputs.release_tag }}
           body: |
-            Updates [swagger-ui][1] to ${{ steps.swagger-ui.outputs.release_tag }}
+            ${{ steps.prepare-update.outcome == 'success' && 'Die Aktualisierung wurde vollständig vorbereitet.' || 'Die automatische Vorbereitung ist fehlgeschlagen. Der PR zeigt die neue Version; die Artefakte müssen vor der Übernahme angepasst werden.' }}
 
-            Auto-generated by [create-pull-request][2]
-
-            [1]: https://github.com/swagger-api/swagger-ui
-            [2]: https://github.com/peter-evans/create-pull-request
+            [Veröffentlichungshinweise](https://github.com/swagger-api/swagger-ui/releases/tag/${{ steps.swagger-ui.outputs.release_tag }})
           labels: dependencies, automated pr
           branch: swagger-ui-updates
