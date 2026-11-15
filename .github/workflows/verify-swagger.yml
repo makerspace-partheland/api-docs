@@ -1,7 +1,8 @@
-name: Verify Swagger UI
+name: API-Dokumentation prüfen
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
   push:
     branches:
       - master
@@ -11,15 +12,33 @@ permissions:
   contents: read
 
 jobs:
+  major:
+    name: Update prüfen
+    if: >-
+      github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/major-policy.yml
+
   verify:
-    name: Swagger UI artifacts
+    needs: major
+    if: >-
+      always() && !cancelled() &&
+      (needs.major.result == 'success' || needs.major.result == 'skipped') &&
+      github.event.pull_request.draft != true && needs.major.outputs.defer != 'true'
+    name: API-Dokumentation prüfen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Quellcode laden
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Verify pinned release and generated artifacts
+      - name: Swagger-UI-Version und Dateien vergleichen
         env:
           GH_TOKEN: ${{ github.token }}
           # Die Freigabe kommt aus den Repository-Einstellungen, nicht aus dem PR.
@@ -129,9 +148,10 @@ jobs:
           diff -u index.html "$work_dir/index.html"
           diff -ru dist "$work_dir/dist"
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Node.js einrichten
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: .node-version
           check-latest: true
       - name: npm-Version aus der Projektkonfiguration verwenden
         working-directory: .github
@@ -151,6 +171,7 @@ jobs:
           npm test
 
   merge-update:
+    name: Update übernehmen
     needs: verify
     if: >-
       github.event_name == 'pull_request' &&
@@ -172,13 +193,13 @@ jobs:
       cancel-in-progress: false
     steps:
       # Kein Checkout und keine Ausführung von PR-Code mit Schreibrechten.
-      - name: Signierte Dependabot-Metadaten prüfen
+      - name: Dependabot-PR auslesen
         if: github.event.pull_request.user.login == 'dependabot[bot]'
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
           github-token: ${{ github.token }}
-      - name: Geprüftes Update übernehmen und Pages-Veröffentlichung anfordern
+      - name: Update übernehmen und API-Dokumentation veröffentlichen
         if: >-
           github.event.pull_request.user.login == format('{0}[bot]', vars.MAINTENANCE_APP_SLUG) ||
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
@@ -219,7 +240,17 @@ jobs:
             echo 'Die Basis hat sich geändert; ein aktueller PR-Prüflauf ist erforderlich.'
             exit 0
           fi
+          live=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")
+          jq -e --arg sha "$EXPECTED_SHA" --arg base "$EXPECTED_BASE" --arg repo "$GH_REPO" \
+            '.state == "open" and .draft == false and .head.sha == $sha and .head.repo.full_name == $repo and .base.ref == "master" and .base.sha == $base' <<< "$live" > /dev/null
+          preview=$(jq -er .merge_commit_sha <<< "$live")
+          [[ "$preview" =~ ^[a-f0-9]{40}$ ]]
+          test "$(gh api "repos/$GH_REPO/commits/$preview" --jq .commit.tree.sha)" = "$(gh api "repos/$GH_REPO/commits/$EXPECTED_SHA" --jq .commit.tree.sha)"
           gh pr merge "$PR_NUMBER" --squash --match-head-commit "$EXPECTED_SHA" \
             --subject "Abhängigkeiten aktualisiert (#$PR_NUMBER)" --body ""
+          merged=$(gh pr view "$PR_NUMBER" --json mergeCommit --jq .mergeCommit.oid)
+          test "$(gh api "repos/$GH_REPO/git/ref/heads/master" --jq .object.sha)" = "$merged"
+          test "$(gh api "repos/$GH_REPO/commits/$merged" --jq .commit.verification.verified)" = true
+          test "$(gh api "repos/$GH_REPO/commits/$merged" --jq .commit.tree.sha)" = "$(gh api "repos/$GH_REPO/commits/$EXPECTED_SHA" --jq .commit.tree.sha)"
           echo 'Update übernommen; Pages-Veröffentlichung wird angefordert.'
           gh api --method POST "repos/$GH_REPO/pages/builds" > /dev/null
