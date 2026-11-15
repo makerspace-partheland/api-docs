@@ -76,6 +76,7 @@ jobs:
             exit 1
           fi
           if [ "${current_tag%%.*}" != "${release_tag%%.*}" ]; then
+            echo "major-version=${release_tag%%.*}" >> "$GITHUB_OUTPUT"
             echo 'major=true' >> "$GITHUB_OUTPUT"
           else
             echo 'major=false' >> "$GITHUB_OUTPUT"
@@ -158,4 +159,4 @@ jobs:
 
             [Veröffentlichungshinweise](https://github.com/swagger-api/swagger-ui/releases/tag/${{ steps.swagger-ui.outputs.release_tag }})
           labels: dependencies, automated pr
-          branch: swagger-ui-updates
+          branch: ${{ steps.swagger-ui.outputs.major == 'true' && format('swagger-ui-major-{0}', steps.swagger-ui.outputs.major-version) || 'swagger-ui-updates' }}
