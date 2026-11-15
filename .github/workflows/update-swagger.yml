@@ -1,4 +1,4 @@
-name: Update Swagger UI
+name: Swagger UI aktualisieren
 on:
   schedule:
     - cron:  '0 10 * * *'
@@ -9,25 +9,27 @@ permissions:
 
 jobs:
   updateSwagger:
+    name: Swagger-UI-Update vorbereiten
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Quellcode laden
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Kurzlebigen Zugriff für den Update-PR erstellen
+      - name: GitHub-App für den Update-PR anmelden
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app-id: ${{ vars.MAINTENANCE_APP_ID }}
+          client-id: ${{ vars.MAINTENANCE_APP_CLIENT_ID }}
           private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: api-docs
           permission-contents: write
           permission-pull-requests: write
-      - name: Get Latest Swagger UI Release
+      - name: Neue Swagger-UI-Version ermitteln
         id: swagger-ui
         env:
           GH_TOKEN: ${{ github.token }}
@@ -73,6 +75,11 @@ jobs:
             echo 'Die installierte Swagger-UI-Version ist nicht eindeutig.' >&2
             exit 1
           fi
+          if [ "${current_tag%%.*}" != "${release_tag%%.*}" ]; then
+            echo 'major=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'major=false' >> "$GITHUB_OUTPUT"
+          fi
           current_commit=""
           if [[ -f swagger-ui.commit ]]; then
             current_commit=$(<swagger-ui.commit)
@@ -98,7 +105,7 @@ jobs:
           else
             printf '%s\n' "eligible=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Update Swagger UI
+      - name: Swagger UI aktualisieren
         id: prepare-update
         if: steps.swagger-ui.outputs.update_required == 'true' && steps.swagger-ui.outputs.eligible == 'true'
         env:
@@ -135,7 +142,7 @@ jobs:
           rm -rf dist
           mv "$work_dir/dist" dist
           mv "$work_dir/index.html" index.html
-      - name: Create Pull Request
+      - name: Update-PR erstellen
         if: >-
           !cancelled() && steps.swagger-ui.outputs.update_required == 'true' &&
           steps.swagger-ui.outputs.eligible == 'true'
@@ -143,7 +150,7 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           sign-commits: true
-          draft: ${{ steps.prepare-update.outcome == 'success' && 'false' || 'always-true' }}
+          draft: ${{ steps.prepare-update.outcome != 'success' && 'always-true' || steps.swagger-ui.outputs.major == 'true' && 'true' || 'false' }}
           commit-message: Swagger-UI-Aktualisierung auf ${{ steps.swagger-ui.outputs.release_tag }} vorbereitet
           title: Aktualisierung auf Swagger UI ${{ steps.swagger-ui.outputs.release_tag }}
           body: |

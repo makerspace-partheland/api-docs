@@ -1,0 +1,46 @@
+name: Versionsdaten prüfen
+
+on:
+  workflow_call:
+    outputs:
+      defer:
+        description: Majorentscheidung ist noch offen
+        value: ${{ jobs.inspect.outputs.defer }}
+
+permissions: {}
+
+jobs:
+  inspect:
+    name: Versionsdaten lesen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      defer: ${{ steps.decision.outputs.defer }}
+    steps:
+      - name: Dependabot-Versionsdaten lesen
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
+        with:
+          github-token: ${{ github.token }}
+      - name: Unentschiedenes Majorupdate als Entwurf vormerken
+        id: decision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          PR_NODE: ${{ github.event.pull_request.node_id }}
+          EVENT_ACTION: ${{ github.event.action }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          set -euo pipefail
+          defer=false
+          if [ "$UPDATE_TYPE" = version-update:semver-major ] && [ "$EVENT_ACTION" = opened ]; then
+            defer=true
+            if [ "$IS_DRAFT" != true ]; then
+              gh api graphql -f query='mutation($pr:ID!) { convertPullRequestToDraft(input:{pullRequestId:$pr}) { pullRequest { isDraft } } }' -F pr="$PR_NODE" > /dev/null
+            fi
+            echo 'Der Majorwechsel bleibt als Entwurf sichtbar. Mit „Ready for review“ startet die vollständige Prüfung.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "defer=$defer" >> "$GITHUB_OUTPUT"
