@@ -174,6 +174,7 @@ jobs:
     name: Update übernehmen
     needs: verify
     if: >-
+      always() && needs.verify.result == 'success' &&
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'master' &&
@@ -259,6 +260,7 @@ jobs:
     name: Werkzeugupdate übernehmen
     needs: verify
     if: >-
+      always() && needs.verify.result == 'success' &&
       github.event_name == 'pull_request' &&
       github.actor == format('{0}[bot]', vars.NICLAS_UPDATER_APP_SLUG) &&
       github.event.pull_request.user.login == format('{0}[bot]', vars.NICLAS_UPDATER_APP_SLUG) &&
