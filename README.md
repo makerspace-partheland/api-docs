@@ -84,6 +84,8 @@ Die vollständige API-Dokumentation ist als OpenAPI (Swagger) Spezifikation verf
 
 Swagger UI und GitHub-Actions-Abhängigkeiten werden automatisiert aktualisiert. Die daraus entstehenden PRs werden nach den normalen GitHub-Actions-Prüfungen übernommen; größere Versionswechsel werden getrennt geprüft.
 
+Ein täglicher Workflow erfasst Dependabot-Meldungen sowie Sicherheitsmeldungen zu den verwendeten Action-Versionen und Swagger UI. Der Bericht steht im Laufprotokoll. Nicht zuordenbare Action-Versionen bleiben ausdrücklich als ungeklärt sichtbar; fehlgeschlagene Abfragen führen zu einem fehlgeschlagenen Lauf.
+
 ## Unterstützung
 
 Bei Fragen oder Problemen: https://makerspace-partheland.de/austausch/
