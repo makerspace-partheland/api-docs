@@ -33,13 +33,14 @@ jobs:
         id: swagger-ui
         env:
           GH_TOKEN: ${{ github.token }}
+          SWAGGER_UI_SECURITY_EXCEPTION: ${{ vars.SWAGGER_UI_SECURITY_EXCEPTION }}
         run: |
           set -euo pipefail
 
           export RELEASE_CUTOFF
           RELEASE_CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
           release_data=$(gh api --paginate --slurp 'repos/swagger-api/swagger-ui/releases?per_page=100' \
-            | jq -r '[.[][] | select(.draft == false and .prerelease == false and .published_at <= env.RELEASE_CUTOFF and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))]
+            | jq -r '[.[][] | select(.draft == false and .prerelease == false and (.published_at <= env.RELEASE_CUTOFF or .tag_name == ((env.SWAGGER_UI_SECURITY_EXCEPTION | try fromjson catch {} | select(type == "object") | .tag) // "")) and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))]
                   | sort_by(.tag_name | ltrimstr("v") | split(".") | map(tonumber))
                   | (last // error("Kein freigegebener stabiler Swagger-UI-Release verfügbar"))
                   | [.tag_name, .published_at] | @tsv')
@@ -99,13 +100,51 @@ jobs:
             printf '%s\n' "update_required=false" >> "$GITHUB_OUTPUT"
           fi
 
-          release_epoch=$(date --date="$published_at" +%s)
-          cooldown_epoch=$(date --date="7 days ago" +%s)
-          if (( release_epoch <= cooldown_epoch )); then
-            printf '%s\n' "eligible=true" >> "$GITHUB_OUTPUT"
-          else
-            printf '%s\n' "eligible=false" >> "$GITHUB_OUTPUT"
-          fi
+          python3 - "$published_at" "$release_tag" "$release_commit" <<'PY'
+          from datetime import datetime, timedelta, timezone
+          import json
+          import os
+          import sys
+          from urllib.parse import urlsplit
+
+          def timestamp(value):
+              parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+              if parsed.tzinfo is None:
+                  raise ValueError("Zeitstempel ohne Zeitzone")
+              return parsed
+
+          now = datetime.now(timezone.utc)
+          published = timestamp(sys.argv[1])
+          if published <= now - timedelta(days=7):
+              sys.exit(0)
+
+          # Nur die Altersfrist darf für den exakt freigegebenen Fix entfallen.
+          try:
+              approval = json.loads(os.environ.get("SWAGGER_UI_SECURITY_EXCEPTION", ""))
+              fields = ("tag", "commit", "advisory", "reason", "expires_at")
+              if not isinstance(approval, dict) or any(
+                  not isinstance(approval.get(key), str) or not approval[key].strip()
+                  for key in fields
+              ):
+                  raise ValueError("Unvollständige Sicherheitsfreigabe")
+              advisory = urlsplit(approval["advisory"])
+              if (
+                  approval["tag"] != sys.argv[2]
+                  or approval["commit"] != sys.argv[3]
+                  or advisory.scheme != "https"
+                  or not advisory.hostname
+                  or advisory.username is not None
+                  or advisory.password is not None
+                  or not published <= now < timestamp(approval["expires_at"]) <= published + timedelta(days=7)
+              ):
+                  raise ValueError("Sicherheitsfreigabe passt nicht oder ist abgelaufen")
+          except (ValueError, TypeError) as error:
+              print(f"Swagger UI ist jünger als 168 Stunden; gültige Sicherheitsfreigabe fehlt: {error}", file=sys.stderr)
+              sys.exit(1)
+          print("Die versionsgebundene Sicherheitsfreigabe ersetzt ausschließlich die Altersfrist.")
+          PY
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+
       - name: Swagger UI aktualisieren
         id: prepare-update
         if: steps.swagger-ui.outputs.update_required == 'true' && steps.swagger-ui.outputs.eligible == 'true'
