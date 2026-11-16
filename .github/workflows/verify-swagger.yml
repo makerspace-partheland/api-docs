@@ -38,6 +38,9 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Erfassung der Sicherheitsmeldungen prüfen
+        run: python3 -B security-inventory/test_inventory.py
+
       - name: Swagger-UI-Version und Dateien vergleichen
         env:
           GH_TOKEN: ${{ github.token }}
