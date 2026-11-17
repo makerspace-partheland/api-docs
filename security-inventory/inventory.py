@@ -72,7 +72,9 @@ def main():
             continue
         versions = action_versions(action, reference)
         if not versions:
-            report['unmapped_actions'].append({'repository': action, 'reference': reference})
+            report['unmapped_actions'].append({'repository': action, 'reference': reference,
+                'advisory_scope': 'package', 'applicability': 'unknown',
+                'findings': affected('actions', [action])})
             continue
         report['actions'].append({'repository': action, 'reference': reference, 'versions': versions,
                                   'findings': affected('actions', [action + '@' + version for version in versions])})
