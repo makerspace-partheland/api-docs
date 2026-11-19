@@ -38,9 +38,35 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Stabile npm-Versionen im Lockfile prüfen
+      - name: Neue und geänderte npm-Versionen im PR prüfen
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          jq -e 'all(.packages | to_entries[] | select(.key != ""); .value.version | test("^[0-9]+[.][0-9]+[.][0-9]+([+][0-9A-Za-z.-]+)?$"))' .github/package-lock.json
+          set -euo pipefail
+          gh api -H 'Accept: application/vnd.github.raw+json' \
+            "repos/$GITHUB_REPOSITORY/contents/.github/package-lock.json?ref=$BASE_SHA" > "$RUNNER_TEMP/base-package-lock.json"
+          python3 - "$RUNNER_TEMP/base-package-lock.json" .github/package-lock.json <<'PYTHON'
+          import json, re, sys
+          from pathlib import Path
+          previous, current = (json.loads(Path(f).read_text())["packages"] for f in sys.argv[1:])
+          def identity(packages, path):
+              package = packages[path]
+              return tuple(package.get(key) for key in ("name", "version", "resolved", "integrity", "link", "inBundle"))
+          for path, package in current.items():
+              if not path or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:\+[0-9A-Za-z.-]+)?", package["version"]):
+                  continue
+              owner = path
+              while owner in previous and identity(previous, owner) == identity(current, owner):
+                  if not current[owner].get("inBundle"):
+                      break
+                  owner, separator, _ = owner.rpartition("/node_modules/")
+                  if not separator:
+                      raise SystemExit(f"Gebündeltes Paket ohne Elternpaket: {path}")
+              else:
+                  raise SystemExit(f"Neue oder geänderte Vorabversion: {path}@{package['version']}")
+          PYTHON
 
       - name: Erfassung der Sicherheitsmeldungen prüfen
         run: python3 -B security-inventory/test_inventory.py
