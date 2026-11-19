@@ -25,6 +25,19 @@ jobs:
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
           github-token: ${{ github.token }}
+      - name: Neue Action-Versionen auf stabile Releases prüfen
+        if: steps.metadata.outputs.package-ecosystem == 'github_actions'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATES: ${{ steps.metadata.outputs.updated-dependencies-json }}
+        run: |
+          set -euo pipefail
+          jq -e 'length > 0 and all(.[]; (.dependencyName | test("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(/[A-Za-z0-9_./-]+)?$")) and (.newVersion | test("^v?[0-9]+([.][0-9]+){0,2}$")))' <<< "$UPDATES" >/dev/null
+          while IFS=$'\t' read -r repo version; do
+            tag=v${version#v}
+            release=$(gh api "repos/$repo/releases/tags/$tag") || release=$(gh api "repos/$repo/releases/tags/${version#v}")
+            jq -e '.draft == false and .prerelease == false' <<< "$release" >/dev/null
+          done < <(jq -r '.[] | [(.dependencyName | split("/")[:2] | join("/")), .newVersion] | @tsv' <<< "$UPDATES")
       - name: Unentschiedenes Majorupdate als Entwurf vormerken
         id: decision
         env:
